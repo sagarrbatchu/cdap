@@ -77,6 +77,7 @@ import io.cdap.cdap.security.impersonation.OwnerStore;
 import io.cdap.cdap.security.impersonation.UGIProvider;
 import io.cdap.cdap.security.spi.authorization.AccessEnforcer;
 import io.cdap.cdap.security.spi.authorization.PrivilegesManager;
+import io.cdap.cdap.security.spi.authorization.RequestAccessEnforcer;
 import io.cdap.cdap.store.DefaultOwnerStore;
 
 /**
@@ -86,6 +87,7 @@ public class PreviewRunnerModule extends PrivateModule {
   private final ArtifactStore artifactStore;
   private final AccessControllerInstantiator accessControllerInstantiator;
   private final AccessEnforcer accessEnforcer;
+  private final RequestAccessEnforcer requestAccessEnforcer;
   private final PrivilegesManager privilegesManager;
   private final PreferencesService preferencesService;
   private final ProgramRuntimeProviderLoader programRuntimeProviderLoader;
@@ -98,6 +100,7 @@ public class PreviewRunnerModule extends PrivateModule {
   PreviewRunnerModule(ArtifactRepositoryReaderProvider readerProvider, ArtifactStore artifactStore,
                       AccessControllerInstantiator accessControllerInstantiator,
                       AccessEnforcer accessEnforcer,
+                      RequestAccessEnforcer requestAccessEnforcer,
                       PrivilegesManager privilegesManager, PreferencesService preferencesService,
                       ProgramRuntimeProviderLoader programRuntimeProviderLoader,
                       PluginFinderProvider pluginFinderProvider,
@@ -107,6 +110,7 @@ public class PreviewRunnerModule extends PrivateModule {
     this.artifactStore = artifactStore;
     this.accessControllerInstantiator = accessControllerInstantiator;
     this.accessEnforcer = accessEnforcer;
+    this.requestAccessEnforcer = requestAccessEnforcer;
     this.privilegesManager = privilegesManager;
     this.preferencesService = preferencesService;
     this.programRuntimeProviderLoader = programRuntimeProviderLoader;
@@ -139,6 +143,8 @@ public class PreviewRunnerModule extends PrivateModule {
 
     bind(AccessEnforcer.class).toInstance(accessEnforcer);
     expose(AccessEnforcer.class);
+    bind(RequestAccessEnforcer.class).toInstance(requestAccessEnforcer);
+    expose(RequestAccessEnforcer.class);
     bind(AccessControllerInstantiator.class).toInstance(accessControllerInstantiator);
     expose(AccessControllerInstantiator.class);
     bind(PrivilegesManager.class).toInstance(privilegesManager);
@@ -158,7 +164,7 @@ public class PreviewRunnerModule extends PrivateModule {
         .implement(Configurator.class, InMemoryConfigurator.class)
         .build(ConfiguratorFactory.class)
     );
-    
+
     install(
       new FactoryModuleBuilder()
         .implement(new TypeLiteral<Manager<AppDeploymentInfo, ApplicationWithPrograms>>() { },

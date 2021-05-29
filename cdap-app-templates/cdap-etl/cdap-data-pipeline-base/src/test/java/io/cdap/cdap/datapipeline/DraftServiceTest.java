@@ -40,6 +40,8 @@ import io.cdap.cdap.etl.proto.v2.ETLConfig;
 import io.cdap.cdap.etl.proto.v2.ETLStage;
 import io.cdap.cdap.internal.guava.reflect.TypeToken;
 import io.cdap.cdap.internal.io.SchemaTypeAdapter;
+import io.cdap.cdap.proto.element.EntityType;
+import io.cdap.cdap.proto.id.ApplicationDraftId;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.proto.security.Authorizable;
 import io.cdap.cdap.proto.security.Principal;
@@ -179,6 +181,9 @@ public class DraftServiceTest extends DataPipelineServiceTest {
     getAccessController().grant(Authorizable.fromEntityId(NamespaceId.DEFAULT),
                                 ALICE_PRINCIPAL,
                                 EnumSet.of(StandardPermission.GET));
+    getAccessController().grant(Authorizable.fromEntityId(NamespaceId.DEFAULT, EntityType.APPLICATION_DRAFT),
+                                ALICE_PRINCIPAL,
+                                EnumSet.of(StandardPermission.LIST));
 
     // Check Alice can list requests now
     expectedCode = HttpURLConnection.HTTP_OK;
@@ -190,6 +195,40 @@ public class DraftServiceTest extends DataPipelineServiceTest {
     // Check Alice can't do it for other namespace
     user = ALICE_NAME;
     listDrafts(TEST_NAMESPACE, false, "", "", "");
+    // Check Alice can't create drafts
+    NamespaceSummary namespace = new NamespaceSummary(NamespaceId.DEFAULT.getNamespace(), "", 0);
+    DraftId draftId = new DraftId(namespace, "draft1", ALICE_NAME);
+    createBatchPipelineDraft(draftId, "TestPipeline1", "This is a test pipeline.");
+    // Grant Alice create priviledge. Note that we don't differenciate create and update,
+    // so update is used in both cases
+    Authorizable draftAuthorizable = Authorizable.fromEntityId(
+      new ApplicationDraftId(NamespaceId.DEFAULT.getNamespace(), "draft1"));
+    getAccessController().grant(draftAuthorizable,
+                                ALICE_PRINCIPAL,
+                                EnumSet.of(StandardPermission.UPDATE));
+    // Now Alice should be able to create draft
+    expectedCode = HttpURLConnection.HTTP_OK;
+    createBatchPipelineDraft(draftId, "TestPipeline1", "This is a test pipeline.");
+    // But she can't get it
+    expectedCode = HttpURLConnection.HTTP_FORBIDDEN;
+    getDraft(draftId);
+    // Give her GET
+    getAccessController().grant(draftAuthorizable,
+                                ALICE_PRINCIPAL,
+                                EnumSet.of(StandardPermission.GET));
+    // Now Alice should be able to get draft
+    expectedCode = HttpURLConnection.HTTP_OK;
+    getDraft(draftId);
+    // She still can't delete it
+    expectedCode = HttpURLConnection.HTTP_FORBIDDEN;
+    deleteDraft(draftId);
+    // Give her DELETE
+    getAccessController().grant(draftAuthorizable,
+                                ALICE_PRINCIPAL,
+                                EnumSet.of(StandardPermission.DELETE));
+    // Now Alice should be able to delete draft
+    expectedCode = HttpURLConnection.HTTP_OK;
+    deleteDraft(draftId);
   }
 
   @Test

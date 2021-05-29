@@ -45,6 +45,9 @@ import io.cdap.cdap.internal.app.worker.SystemAppTask;
 import io.cdap.cdap.messaging.MessagingService;
 import io.cdap.cdap.metadata.PreferencesFetcher;
 import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.security.spi.authentication.AuthenticationContext;
+import io.cdap.cdap.security.spi.authorization.AccessEnforcer;
+import io.cdap.cdap.security.spi.authorization.RequestAccessEnforcer;
 import io.cdap.cdap.security.spi.authorization.UnauthorizedException;
 import io.cdap.cdap.spi.data.table.StructuredTableId;
 import io.cdap.cdap.spi.data.transaction.TransactionException;
@@ -70,6 +73,7 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
   private final TransactionRunner transactionRunner;
   private final PreferencesFetcher preferencesFetcher;
   private final RemoteTaskExecutor remoteTaskExecutor;
+  private final RequestAccessEnforcer requestAccessEnforcer;
 
   /**
    * Creates a BasicSystemHttpServiceContext.
@@ -86,7 +90,8 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
                                        MetadataReader metadataReader, MetadataPublisher metadataPublisher,
                                        NamespaceQueryAdmin namespaceQueryAdmin, PluginFinder pluginFinder,
                                        FieldLineageWriter fieldLineageWriter, TransactionRunner transactionRunner,
-                                       PreferencesFetcher preferencesFetcher) {
+                                       PreferencesFetcher preferencesFetcher,
+                                       RequestAccessEnforcer requestAccessEnforcer) {
     super(program, programOptions, cConf, spec, instanceId, instanceCount, metricsCollectionService, dsFramework,
           discoveryServiceClient, txClient, pluginInstantiator, secureStore, secureStoreManager, messagingService,
           artifactManager, metadataReader, metadataPublisher, namespaceQueryAdmin, pluginFinder, fieldLineageWriter);
@@ -94,6 +99,7 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
     this.namespaceId = program.getId().getNamespaceId();
     this.transactionRunner = transactionRunner;
     this.preferencesFetcher = preferencesFetcher;
+    this.requestAccessEnforcer = requestAccessEnforcer;
     this.remoteTaskExecutor = new RemoteTaskExecutor(cConf, discoveryServiceClient);
   }
 
@@ -154,5 +160,10 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
       .withParam(systemAppParam)
       .build();
     return remoteTaskExecutor.runTask(taskRequest);
+  }
+
+  @Override
+  public RequestAccessEnforcer getRequestAccessEnforcer() {
+    return requestAccessEnforcer;
   }
 }

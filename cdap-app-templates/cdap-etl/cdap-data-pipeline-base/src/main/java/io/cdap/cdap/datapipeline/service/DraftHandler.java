@@ -31,6 +31,11 @@ import io.cdap.cdap.etl.proto.v2.DataStreamsConfig;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLConfig;
 import io.cdap.cdap.internal.io.SchemaTypeAdapter;
+import io.cdap.cdap.proto.element.EntityType;
+import io.cdap.cdap.proto.id.ApplicationDraftId;
+import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.proto.security.StandardPermission;
+import io.cdap.cdap.security.spi.authorization.RequestAccessEnforcer;
 
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
@@ -59,10 +64,12 @@ public class DraftHandler extends AbstractDataPipelineHandler {
   private Metrics metrics;
 
   private DraftService draftService;
+  private RequestAccessEnforcer requestAccessEnforcer;
 
   @Override
   public void initialize(SystemHttpServiceContext context) throws Exception {
     super.initialize(context);
+    requestAccessEnforcer = context.getRequestAccessEnforcer();
     this.draftService = new DraftService(context, this.metrics);
   }
 
@@ -78,6 +85,8 @@ public class DraftHandler extends AbstractDataPipelineHandler {
                          @QueryParam("sortOrder") @DefaultValue("ASC") String sortOrder,
                          @QueryParam("filter") @Nullable String filter) {
 
+    requestAccessEnforcer.enforceOnParent(EntityType.APPLICATION_DRAFT, new NamespaceId(namespaceName),
+                                          StandardPermission.LIST);
     respond(namespaceName, responder, (namespace) -> {
       if (!draftService.fieldExists(sortBy)) {
         throw new IllegalArgumentException(String.format(
@@ -99,6 +108,8 @@ public class DraftHandler extends AbstractDataPipelineHandler {
   public void getDraft(HttpServiceRequest request, HttpServiceResponder responder,
                        @PathParam("context") String namespaceName,
                        @PathParam("draft") String draftId) {
+    requestAccessEnforcer.enforce(new ApplicationDraftId(namespaceName, draftId),
+                                  StandardPermission.GET);
     respond(namespaceName, responder, (namespace) -> {
       String userId = request.getUserId();
       userId = userId == null ? "" : userId;
@@ -116,6 +127,7 @@ public class DraftHandler extends AbstractDataPipelineHandler {
                        @PathParam("context") String namespaceName,
                        @PathParam("draft") String draftId) {
 
+    requestAccessEnforcer.enforce(new ApplicationDraftId(namespaceName, draftId), StandardPermission.UPDATE);
     respond(namespaceName, responder, (namespace) -> {
 
       String requestStr = StandardCharsets.UTF_8.decode(request.getContent()).toString();
@@ -137,6 +149,7 @@ public class DraftHandler extends AbstractDataPipelineHandler {
   public void deleteDraft(HttpServiceRequest request, HttpServiceResponder responder,
                           @PathParam("context") String namespaceName,
                           @PathParam("draft") String draftId) {
+    requestAccessEnforcer.enforce(new ApplicationDraftId(namespaceName, draftId), StandardPermission.DELETE);
     respond(namespaceName, responder, (namespace) -> {
       String userId = request.getUserId();
       userId = userId == null ? "" : userId;

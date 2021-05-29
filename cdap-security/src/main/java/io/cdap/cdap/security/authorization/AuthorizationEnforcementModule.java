@@ -24,6 +24,7 @@ import io.cdap.cdap.security.spi.authorization.AccessController;
 import io.cdap.cdap.security.spi.authorization.AccessEnforcer;
 import io.cdap.cdap.security.spi.authorization.AuthorizationEnforcer;
 import io.cdap.cdap.security.spi.authorization.Authorizer;
+import io.cdap.cdap.security.spi.authorization.RequestAccessEnforcer;
 
 /**
  * A module that contains bindings for {@link AuthorizationEnforcer}.
@@ -37,6 +38,7 @@ public class AuthorizationEnforcementModule extends RuntimeModule {
       protected void configure() {
         bind(AccessEnforcer.class).to(DefaultAccessEnforcer.class).in(Scopes.SINGLETON);
         bind(AuthorizationEnforcer.class).to(AccessEnforcerWrapper.class).in(Scopes.SINGLETON);
+        bind(RequestAccessEnforcer.class).to(DefaultRequestAccessEnforcer.class).in(Scopes.SINGLETON);
       }
     };
   }
@@ -48,6 +50,7 @@ public class AuthorizationEnforcementModule extends RuntimeModule {
       protected void configure() {
         bind(AccessEnforcer.class).to(DefaultAccessEnforcer.class).in(Scopes.SINGLETON);
         bind(AuthorizationEnforcer.class).to(AccessEnforcerWrapper.class).in(Scopes.SINGLETON);
+        bind(RequestAccessEnforcer.class).to(DefaultRequestAccessEnforcer.class).in(Scopes.SINGLETON);
       }
     };
   }
@@ -63,6 +66,7 @@ public class AuthorizationEnforcementModule extends RuntimeModule {
       protected void configure() {
         bind(AccessEnforcer.class).to(RemoteAccessEnforcer.class).in(Scopes.SINGLETON);
         bind(AuthorizationEnforcer.class).to(AccessEnforcerWrapper.class).in(Scopes.SINGLETON);
+        bind(RequestAccessEnforcer.class).to(DefaultRequestAccessEnforcer.class).in(Scopes.SINGLETON);
       }
     };
   }
@@ -76,6 +80,7 @@ public class AuthorizationEnforcementModule extends RuntimeModule {
       protected void configure() {
         bind(AccessEnforcer.class).to(DefaultAccessEnforcer.class).in(Scopes.SINGLETON);
         bind(AuthorizationEnforcer.class).to(AccessEnforcerWrapper.class).in(Scopes.SINGLETON);
+        bind(RequestAccessEnforcer.class).to(DefaultRequestAccessEnforcer.class).in(Scopes.SINGLETON);
       }
     };
   }

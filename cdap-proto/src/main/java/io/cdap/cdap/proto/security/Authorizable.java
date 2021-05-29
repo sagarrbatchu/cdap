@@ -252,6 +252,7 @@ public class Authorizable {
       case DATASET_TYPE:
       case SECUREKEY:
       case PROFILE:
+      case APPLICATION_DRAFT:
         if (parts.size() != 2 && index == (parts.size() - 1)) {
           throw new IllegalArgumentException("Entity value is missing some parts or containing more parts. " +
                                                "Expected: <namespace-name>.<entity-name>, given entity: " + parts);

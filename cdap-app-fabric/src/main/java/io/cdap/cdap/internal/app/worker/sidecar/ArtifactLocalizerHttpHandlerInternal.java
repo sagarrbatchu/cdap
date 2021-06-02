@@ -39,14 +39,15 @@ import javax.ws.rs.Path;
  */
 @Singleton
 @Path(Constants.Gateway.INTERNAL_API_VERSION_3 + "/worker")
-public class FileLocalizerHttpHandlerInternal extends AbstractLogHttpHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(FileLocalizerHttpHandlerInternal.class);
+public class ArtifactLocalizerHttpHandlerInternal extends AbstractLogHttpHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(ArtifactLocalizerHttpHandlerInternal.class);
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(BasicThrowable.class, new BasicThrowableCodec()).create();
 
   @Inject
-  public FileLocalizerHttpHandlerInternal(CConfiguration cConf) {
+  public ArtifactLocalizerHttpHandlerInternal(CConfiguration cConf) {
     super(cConf);
+
   }
 
   @GET

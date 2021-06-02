@@ -25,9 +25,7 @@ import io.cdap.cdap.common.conf.SConfiguration;
 import io.cdap.cdap.common.discovery.ResolvingDiscoverable;
 import io.cdap.cdap.common.discovery.URIScheme;
 import io.cdap.cdap.common.http.CommonNettyHttpServiceBuilder;
-import io.cdap.cdap.common.internal.worker.RunnableTask;
 import io.cdap.cdap.common.security.HttpsEnabler;
-import io.cdap.cdap.internal.app.worker.TaskWorkerHttpHandlerInternal;
 import io.cdap.http.NettyHttpService;
 import org.apache.twill.common.Cancellable;
 import org.apache.twill.discovery.DiscoveryService;
@@ -38,11 +36,11 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Launches an HTTP server for receiving and handling {@link RunnableTask}
+ * Launches an HTTP server for receiving and unpacking and caching artifacts.
  */
-public class FileLocalizerService extends AbstractIdleService {
+public class ArtifactLocalizerService extends AbstractIdleService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(FileLocalizerService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ArtifactLocalizerService.class);
 
   private final CConfiguration cConf;
   private final SConfiguration sConf;
@@ -52,9 +50,9 @@ public class FileLocalizerService extends AbstractIdleService {
   private InetSocketAddress bindAddress;
 
   @Inject
-  FileLocalizerService(CConfiguration cConf,
-                       SConfiguration sConf,
-                       DiscoveryService discoveryService) {
+  ArtifactLocalizerService(CConfiguration cConf,
+                           SConfiguration sConf,
+                           DiscoveryService discoveryService) {
     this.cConf = cConf;
     this.sConf = sConf;
     this.discoveryService = discoveryService;
@@ -65,7 +63,8 @@ public class FileLocalizerService extends AbstractIdleService {
       .setExecThreadPoolSize(cConf.getInt(Constants.FileLocalizer.EXEC_THREADS))
       .setBossThreadPoolSize(cConf.getInt(Constants.FileLocalizer.BOSS_THREADS))
       .setWorkerThreadPoolSize(cConf.getInt(Constants.FileLocalizer.WORKER_THREADS))
-      .setHttpHandlers(new TaskWorkerHttpHandlerInternal(this.cConf, this::stopService));
+      .setHttpHandlers(new ArtifactLocalizerHttpHandlerInternal(this.cConf));
+
 
     if (cConf.getBoolean(Constants.Security.SSL.INTERNAL_ENABLED)) {
       new HttpsEnabler().configureKeyStore(cConf, sConf).enable(builder);
@@ -75,28 +74,20 @@ public class FileLocalizerService extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
-    LOG.info("Starting TaskWorkerService");
+    LOG.info("Starting ArtifactLocalizerService");
     httpService.start();
     bindAddress = httpService.getBindAddress();
     cancelDiscovery = discoveryService.register(
       ResolvingDiscoverable.of(URIScheme.createDiscoverable(Constants.Service.TASK_WORKER, httpService)));
-    LOG.info("Starting TaskWorkerService has completed");
+    LOG.info("Starting ArtifactLocalizerService has completed");
   }
 
   @Override
   protected void shutDown() throws Exception {
-    LOG.info("Shutting down TaskWorkerService");
+    LOG.info("Shutting down ArtifactLocalizerService");
     cancelDiscovery.cancel();
     httpService.stop(5, 5, TimeUnit.SECONDS);
-    LOG.debug("Shutting down TaskWorkerService has completed");
-  }
-
-  private void stopService(String className) {
-    /** TODO: Expand this logic such that
-     * based on number of requests per particular class,
-     * the service gets stopped.
-     */
-    stop();
+    LOG.debug("Shutting down ArtifactLocalizerService has completed");
   }
 
   @VisibleForTesting

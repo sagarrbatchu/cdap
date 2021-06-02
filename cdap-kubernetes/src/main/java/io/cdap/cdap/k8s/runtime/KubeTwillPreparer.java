@@ -749,10 +749,8 @@ class KubeTwillPreparer implements DependentTwillPreparer, StatefulTwillPreparer
     String workDir = "/workDir-" + twillRunId.getId();
 
     V1Volume podInfoVolume = createPodInfoVolume(podInfo);
-
-    RuntimeSpecification mainRuntimeSpec = getMainRuntimeSpecification(runtimeSpecs);
-    V1ResourceRequirements initContainerResourceRequirements =
-      createResourceRequirements(mainRuntimeSpec.getResourceSpecification());
+    V1ResourceRequirements resourceRequirements =
+      createResourceRequirements(runtimeSpecs.iterator().next().getResourceSpecification());
 
     // Add volume mounts to the container. Add those from the current pod for mount cdap and hadoop conf.
     List<V1VolumeMount> volumeMounts = new ArrayList<>(podInfo.getContainerVolumeMounts());

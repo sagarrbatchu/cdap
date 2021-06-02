@@ -59,12 +59,11 @@ public class ArtifactLocalizerService extends AbstractIdleService {
 
     NettyHttpService.Builder builder = new CommonNettyHttpServiceBuilder(cConf, Constants.Service.TASK_WORKER)
       .setHost("127.0.0.1")
-      .setPort(cConf.getInt(Constants.FileLocalizer.PORT))
-      .setExecThreadPoolSize(cConf.getInt(Constants.FileLocalizer.EXEC_THREADS))
-      .setBossThreadPoolSize(cConf.getInt(Constants.FileLocalizer.BOSS_THREADS))
-      .setWorkerThreadPoolSize(cConf.getInt(Constants.FileLocalizer.WORKER_THREADS))
+      .setPort(cConf.getInt(Constants.ArtifactLocalizer.PORT))
+      .setExecThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.EXEC_THREADS))
+      .setBossThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.BOSS_THREADS))
+      .setWorkerThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.WORKER_THREADS))
       .setHttpHandlers(new ArtifactLocalizerHttpHandlerInternal(this.cConf));
-
 
     if (cConf.getBoolean(Constants.Security.SSL.INTERNAL_ENABLED)) {
       new HttpsEnabler().configureKeyStore(cConf, sConf).enable(builder);

@@ -26,18 +26,19 @@ import org.apache.twill.api.TwillRunnable;
 public interface SecureTwillPreparer extends TwillPreparer {
   /**
    * Runs the given runnable as a certain identity.
+   * In this case, the concept of identity is up to the preparer to define.
    *
    * @param runnableName name of the {@link TwillRunnable}
-   * @param identity the identity name to run as
+   * @param identity the identity to run as
    * @return this {@link TwillPreparer}
    */
   SecureTwillPreparer withIdentity(String runnableName, String identity);
 
   /**
-   * Runs the given runnable with an externally-provided secret.
+   * Runs all runnables prepared by the preparer with the SConfiguration mounted.
+   * By omitting this call, runnables will not have access to the cdap-security SConfiguration.
    *
-   * @param secretName the external secret identifier to attach to the runnables
    * @return this {@link TwillPreparer}
    */
-  SecureTwillPreparer withExternalSecret(String... secretName);
+  SecureTwillPreparer withSecuritySecret();
 }

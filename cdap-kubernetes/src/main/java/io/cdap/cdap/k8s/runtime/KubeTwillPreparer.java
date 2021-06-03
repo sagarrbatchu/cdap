@@ -124,6 +124,8 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
 
   private static final String CPU_MULTIPLIER = "master.environment.k8s.container.cpu.multiplier";
   private static final String MEMORY_MULTIPLIER = "master.environment.k8s.container.memory.multiplier";
+  private static final String POD_SCONF_MOUNT_PATH = "master.environment.k8s.pod.sconf.mount.path";
+  private static final String POD_SCONF_SECRET_NAME = "master.environment.k8s.pod.sconf.secret.name";
   private static final String DEFAULT_MULTIPLIER = "1.0";
 
   private final MasterEnvironmentContext masterEnvContext;
@@ -144,7 +146,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
   private final Map<String, String> extraLabels;
   private String schedulerQueue;
   private final Map<String, String> runnableServiceAccounts;
-  private final List<String> externalSecrets;
+  private boolean mountSConf;
 
   KubeTwillPreparer(MasterEnvironmentContext masterEnvContext, ApiClient apiClient, String kubeNamespace,
                     PodInfo podInfo, TwillSpecification spec, RunId twillRunId, Location appLocation,
@@ -171,7 +173,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
     this.resourcePrefix = resourcePrefix;
     this.extraLabels = extraLabels;
     this.runnableServiceAccounts = new HashMap<>();
-    this.externalSecrets = new ArrayList<>();
+    this.mountSConf = false;
   }
 
   @Override
@@ -202,8 +204,8 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
   }
 
   @Override
-  public SecureTwillPreparer withExternalSecret(String... secretName) {
-    externalSecrets.addAll(Arrays.asList(secretName));
+  public SecureTwillPreparer withSecuritySecret() {
+    mountSConf = true;
     return this;
   }
 
@@ -721,10 +723,18 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
 
     // Add external secrets as secret volume mounts
     List<V1Volume> secretVolumes = new ArrayList<>();
-    for (String secret : externalSecrets) {
-      String mountPath = "/etc/cdap/" + secret;
-      secretVolumes.add(new V1Volume().name(secret).secret(new V1SecretVolumeSource().secretName(secret)));
-      volumeMounts.add(new V1VolumeMount().name(secret).mountPath(mountPath).readOnly(true));
+    if (mountSConf) {
+      String mountPath = masterEnvContext.getConfigurations().get(POD_SCONF_MOUNT_PATH);
+      if (mountPath == null) {
+        throw new IllegalArgumentException("Mount path must be specified for k8s SConfiguration secret");
+      }
+      String sConfSecretName = masterEnvContext.getConfigurations().get(POD_SCONF_SECRET_NAME);
+      if (mountPath == null) {
+        throw new IllegalArgumentException("Secret name must be specified for k8s SConfiguration secret");
+      }
+      secretVolumes.add(new V1Volume().name(sConfSecretName).secret(new V1SecretVolumeSource()
+                                                                      .secretName(sConfSecretName)));
+      volumeMounts.add(new V1VolumeMount().name(sConfSecretName).mountPath(mountPath).readOnly(true));
     }
 
     // Setup the container environment. Inherit everything from the current pod.

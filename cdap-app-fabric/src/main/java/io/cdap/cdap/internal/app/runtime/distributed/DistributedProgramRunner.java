@@ -275,9 +275,9 @@ public abstract class DistributedProgramRunner implements ProgramRunner, Program
           twillPreparer.setSchedulerQueue(schedulerQueueName);
         }
 
-        // Add secrets if using secrets
+        // Add SConfiguration if using secrets.
         if (twillPreparer instanceof SecureTwillPreparer) {
-          twillPreparer = ((SecureTwillPreparer) twillPreparer).withExternalSecret("cdap-security");
+          twillPreparer = ((SecureTwillPreparer) twillPreparer).withSecuritySecret();
         }
 
         // Set JVM options based on configuration

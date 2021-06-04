@@ -44,6 +44,7 @@ import io.cdap.cdap.metadata.MetadataService;
 import io.cdap.cdap.metadata.MetadataServiceModule;
 import io.cdap.cdap.metadata.MetadataSubscriberService;
 import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
 import io.cdap.cdap.security.impersonation.CurrentUGIProvider;
@@ -111,6 +112,7 @@ public class MetadataServiceMain extends AbstractServiceMain<EnvironmentOptions>
                              EnvironmentOptions options) {
     services.add(injector.getInstance(MetadataService.class));
     services.add(injector.getInstance(MetadataSubscriberService.class));
+    services.add(injector.getInstance(TokenManager.class));
 
     // Add a service just for closing MetadataStorage to release resource.
     // MetadataStorage is binded as Singleton, so ok to get the instance and close it.

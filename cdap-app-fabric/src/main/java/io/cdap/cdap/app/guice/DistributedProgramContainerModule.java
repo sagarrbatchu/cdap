@@ -114,12 +114,9 @@ public class DistributedProgramContainerModule extends AbstractModule {
   @Override
   protected void configure() {
     List<Module> modules = getCoreModules();
-    String principal = programOpts.getArguments().getOption(ProgramOptionConstants.PRINCIPAL);
 
     AuthenticationContextModules authModules = new AuthenticationContextModules();
-    modules.add(principal == null
-                  ? authModules.getProgramContainerModule()
-                  : authModules.getProgramContainerModule(principal));
+    modules.add(authModules.getProgramContainerModule());
 
     install(Modules.override(modules).with(new AbstractModule() {
       @Override

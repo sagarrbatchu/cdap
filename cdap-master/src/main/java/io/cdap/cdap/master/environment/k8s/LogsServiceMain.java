@@ -49,6 +49,7 @@ import io.cdap.cdap.master.spi.environment.MasterEnvironment;
 import io.cdap.cdap.master.spi.environment.MasterEnvironmentContext;
 import io.cdap.cdap.messaging.guice.MessagingClientModule;
 import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
 import io.cdap.cdap.security.impersonation.CurrentUGIProvider;
@@ -127,6 +128,8 @@ public class LogsServiceMain extends AbstractServiceMain<EnvironmentOptions> {
     services.add(injector.getInstance(LogQueryService.class));
     // log saver status service
     services.add(injector.getInstance(LogSaverStatusService.class));
+    // internal identity generation
+    services.add(injector.getInstance(TokenManager.class));
   }
 
   @Nullable

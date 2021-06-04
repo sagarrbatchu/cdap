@@ -33,6 +33,7 @@ import io.cdap.cdap.master.spi.environment.MasterEnvironment;
 import io.cdap.cdap.master.spi.environment.MasterEnvironmentContext;
 import io.cdap.cdap.messaging.guice.MessagingClientModule;
 import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.guice.SecurityModule;
 import io.cdap.cdap.security.guice.SecurityModules;
 import io.cdap.cdap.security.impersonation.SecurityUtil;
@@ -92,6 +93,7 @@ public class RouterServiceMain extends AbstractServiceMain<EnvironmentOptions> {
       services.add(zkBinding.getProvider().get());
     }
     services.add(injector.getInstance(NettyRouter.class));
+    services.add(injector.getInstance(TokenManager.class));
   }
 
   @Nullable

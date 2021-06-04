@@ -33,7 +33,8 @@ public class Principal {
   public enum PrincipalType {
     USER,
     GROUP,
-    ROLE
+    ROLE,
+    INTERNAL
   }
 
   private final String name;

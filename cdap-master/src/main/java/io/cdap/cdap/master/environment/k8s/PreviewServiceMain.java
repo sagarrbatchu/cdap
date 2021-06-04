@@ -47,6 +47,7 @@ import io.cdap.cdap.metadata.MetadataReaderWriterModules;
 import io.cdap.cdap.metadata.MetadataServiceModule;
 import io.cdap.cdap.metrics.guice.MetricsStoreModule;
 import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
 import io.cdap.cdap.security.guice.SecureStoreClientModule;
 import org.apache.twill.api.Configs;
@@ -138,6 +139,7 @@ public class PreviewServiceMain extends AbstractServiceMain<EnvironmentOptions> 
                              EnvironmentOptions options) {
     services.add(new TwillRunnerServiceWrapper(injector.getInstance(TwillRunnerService.class)));
     services.add(injector.getInstance(PreviewHttpServer.class));
+    services.add(injector.getInstance(TokenManager.class));
 
     CConfiguration cConf = injector.getInstance(CConfiguration.class);
     if (cConf.getInt(Constants.Preview.CONTAINER_COUNT) <= 0) {

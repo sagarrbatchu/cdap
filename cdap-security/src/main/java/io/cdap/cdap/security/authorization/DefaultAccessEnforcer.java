@@ -94,6 +94,13 @@ public class DefaultAccessEnforcer extends AbstractAccessEnforcer {
       return entityIds;
     }
 
+    // DO_NOT_MERGE
+    // Temporary short-circuit
+    if (principal.getType().equals(Principal.PrincipalType.INTERNAL)) {
+      LOG.info("Internal Principal enforce({}, {})", entityIds, principal);
+      return entityIds;
+    }
+
     Set<EntityId> visibleEntities = new HashSet<>();
     // filter out entity id which is in system namespace and principal is the master user
     for (EntityId entityId : entityIds) {
@@ -103,7 +110,7 @@ public class DefaultAccessEnforcer extends AbstractAccessEnforcer {
     }
 
     Set<? extends EntityId> difference = Sets.difference(entityIds, visibleEntities);
-    LOG.trace("Checking visibility of {} for principal {}.", difference, principal);
+    LOG.info("Checking visibility of {} for principal {}.", difference, principal);
     Set<? extends EntityId> moreVisibleEntities;
     long startTime = System.nanoTime();
     try {
@@ -128,7 +135,15 @@ public class DefaultAccessEnforcer extends AbstractAccessEnforcer {
     if (isAccessingSystemNSAsMasterUser(entity, principal) || isEnforcingOnSamePrincipalId(entity, principal)) {
       return;
     }
-    LOG.trace("Enforcing permissions {} on {} for principal {}.", permissions, entity, principal);
+
+    // DO_NOT_MERGE
+    // Temporary short-circuit
+    if (principal.getType().equals(Principal.PrincipalType.INTERNAL)) {
+      LOG.info("Internal Principal enforce({}, {}, {})", entity, principal, permissions);
+      return;
+    }
+
+    LOG.info("Enforcing permissions {} on {} for principal {}.", permissions, entity, principal);
     long startTime = System.nanoTime();
     try {
       accessControllerInstantiator.get().enforce(entity, principal, permissions);

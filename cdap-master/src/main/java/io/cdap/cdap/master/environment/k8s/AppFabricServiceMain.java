@@ -49,7 +49,6 @@ import io.cdap.cdap.explore.guice.ExploreClientModule;
 import io.cdap.cdap.internal.app.namespace.LocalStorageProviderNamespaceAdmin;
 import io.cdap.cdap.internal.app.namespace.StorageProviderNamespaceAdmin;
 import io.cdap.cdap.internal.app.services.AppFabricServer;
-import io.cdap.cdap.internal.app.worker.TaskWorkerService;
 import io.cdap.cdap.internal.app.worker.TaskWorkerServiceLauncher;
 import io.cdap.cdap.master.spi.environment.MasterEnvironment;
 import io.cdap.cdap.master.spi.environment.MasterEnvironmentContext;
@@ -58,6 +57,7 @@ import io.cdap.cdap.metrics.guice.MetricsStoreModule;
 import io.cdap.cdap.operations.OperationalStatsService;
 import io.cdap.cdap.operations.guice.OperationalStatsModule;
 import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.authorization.AccessControllerInstantiator;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
 import io.cdap.cdap.security.guice.SecureStoreServerModule;
@@ -134,6 +134,7 @@ public class AppFabricServiceMain extends AbstractServiceMain<EnvironmentOptions
     services.add(injector.getInstance(SecureStoreService.class));
     services.add(injector.getInstance(DatasetOpExecutorService.class));
     services.add(injector.getInstance(ServiceStore.class));
+    services.add(injector.getInstance(TokenManager.class));
 
     // Start both the remote TwillRunnerService and regular TwillRunnerService
     TwillRunnerService remoteTwillRunner = injector.getInstance(Key.get(TwillRunnerService.class,

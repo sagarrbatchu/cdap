@@ -31,6 +31,7 @@ import io.cdap.cdap.messaging.MessagingService;
 import io.cdap.cdap.messaging.guice.MessagingServerRuntimeModule;
 import io.cdap.cdap.messaging.server.MessagingHttpService;
 import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
 
@@ -73,6 +74,7 @@ public class MessagingServiceMain extends AbstractServiceMain<EnvironmentOptions
       services.add((Service) messagingService);
     }
     services.add(injector.getInstance(MessagingHttpService.class));
+    services.add(injector.getInstance(TokenManager.class));
   }
 
   @Nullable

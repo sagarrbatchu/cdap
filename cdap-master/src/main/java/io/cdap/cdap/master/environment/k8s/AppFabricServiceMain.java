@@ -61,6 +61,7 @@ import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.authorization.AccessControllerInstantiator;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
 import io.cdap.cdap.security.guice.SecureStoreServerModule;
+import io.cdap.cdap.security.guice.SecurityModules;
 import io.cdap.cdap.security.store.SecureStoreService;
 import org.apache.twill.api.TwillRunner;
 import org.apache.twill.api.TwillRunnerService;
@@ -120,7 +121,8 @@ public class AppFabricServiceMain extends AbstractServiceMain<EnvironmentOptions
           bind(MetadataPublisher.class).to(MessagingMetadataPublisher.class);
           bind(MetadataServiceClient.class).to(DefaultMetadataServiceClient.class);
         }
-      }
+      },
+      new SecurityModules().getStandaloneModules()
     );
   }
 

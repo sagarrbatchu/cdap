@@ -45,6 +45,7 @@ import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
+import io.cdap.cdap.security.guice.SecurityModules;
 
 import java.util.Arrays;
 import java.util.List;
@@ -79,7 +80,8 @@ public class MetricsServiceMain extends AbstractServiceMain<EnvironmentOptions> 
       new MetricsProcessorStatusServiceModule(),
       new MetricsHandlerModule(),
       new DFSLocationModule(),
-      new MetricsWriterModule()
+      new MetricsWriterModule(),
+      new SecurityModules().getStandaloneModules()
     );
   }
 

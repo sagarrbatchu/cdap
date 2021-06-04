@@ -52,6 +52,7 @@ import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
+import io.cdap.cdap.security.guice.SecurityModules;
 import io.cdap.cdap.security.impersonation.CurrentUGIProvider;
 import io.cdap.cdap.security.impersonation.UGIProvider;
 import io.cdap.http.HttpHandler;
@@ -114,7 +115,8 @@ public class LogsServiceMain extends AbstractServiceMain<EnvironmentOptions> {
           bind(LogSaverStatusService.class).in(Scopes.SINGLETON);
           expose(LogSaverStatusService.class);
         }
-      }
+      },
+      new SecurityModules().getStandaloneModules()
     );
   }
 

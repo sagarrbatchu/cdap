@@ -34,6 +34,7 @@ import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.security.auth.TokenManager;
 import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
 import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
+import io.cdap.cdap.security.guice.SecurityModules;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,7 +61,8 @@ public class MessagingServiceMain extends AbstractServiceMain<EnvironmentOptions
       new AuthorizationEnforcementModule().getDistributedModules(),
       new AuthenticationContextModules().getMasterModule(),
       new MessagingServerRuntimeModule().getStandaloneModules(),
-      new DFSLocationModule()
+      new DFSLocationModule(),
+      new SecurityModules().getStandaloneModules()
     );
   }
 

@@ -98,6 +98,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -146,7 +147,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
   private final Map<String, String> extraLabels;
   private String schedulerQueue;
   private final Map<String, String> runnableServiceAccounts;
-  private boolean mountSConf;
+  private final Set<String> sConfMountedRunnables;
 
   KubeTwillPreparer(MasterEnvironmentContext masterEnvContext, ApiClient apiClient, String kubeNamespace,
                     PodInfo podInfo, TwillSpecification spec, RunId twillRunId, Location appLocation,
@@ -173,7 +174,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
     this.resourcePrefix = resourcePrefix;
     this.extraLabels = extraLabels;
     this.runnableServiceAccounts = new HashMap<>();
-    this.mountSConf = false;
+    this.sConfMountedRunnables = new HashSet<>();
   }
 
   @Override
@@ -204,8 +205,8 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
   }
 
   @Override
-  public SecureTwillPreparer withSecuritySecret() {
-    mountSConf = true;
+  public SecureTwillPreparer withSecuritySecret(String... runnableNames) {
+    sConfMountedRunnables.addAll(Arrays.asList(runnableNames));
     return this;
   }
 
@@ -723,7 +724,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
 
     // Add external secrets as secret volume mounts
     List<V1Volume> secretVolumes = new ArrayList<>();
-    if (mountSConf) {
+    if (sConfMountedRunnables.contains(runnableName)) {
       String mountPath = masterEnvContext.getConfigurations().get(POD_SCONF_MOUNT_PATH);
       if (mountPath == null) {
         throw new IllegalArgumentException("Mount path must be specified for k8s SConfiguration secret");

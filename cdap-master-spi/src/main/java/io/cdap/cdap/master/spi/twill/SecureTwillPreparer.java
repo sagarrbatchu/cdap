@@ -35,10 +35,11 @@ public interface SecureTwillPreparer extends TwillPreparer {
   SecureTwillPreparer withIdentity(String runnableName, String identity);
 
   /**
-   * Runs all runnables prepared by the preparer with the SConfiguration mounted.
-   * By omitting this call, runnables will not have access to the cdap-security SConfiguration.
+   * Runs the given runnable with the SConfiguration mounted.
+   * By omitting this call, runnables may not have access to the SConfiguration.
    *
+   * @param runnableNames names of the {@link TwillRunnable}
    * @return this {@link TwillPreparer}
    */
-  SecureTwillPreparer withSecuritySecret();
+  SecureTwillPreparer withSecuritySecret(String... runnableNames);
 }

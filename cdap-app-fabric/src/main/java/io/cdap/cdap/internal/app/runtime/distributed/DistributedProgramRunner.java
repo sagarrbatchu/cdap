@@ -260,6 +260,15 @@ public abstract class DistributedProgramRunner implements ProgramRunner, Program
           }
           twillPreparer.setLogLevels(runnable, transformLogLevels(runnableDefinition.getLogLevels()));
           twillPreparer.withConfiguration(runnable, runnableDefinition.getTwillRunnableConfigs());
+
+          // Add SConfiguration if using secrets, and set the runnable identity.
+          if (twillPreparer instanceof SecureTwillPreparer) {
+            String twillSystemIdentity = cConf.get(Constants.Security.TwillIdentity.IDENTITY_SYSTEM);
+            if (twillSystemIdentity != null) {
+              twillPreparer = ((SecureTwillPreparer) twillPreparer).withIdentity(runnable, twillSystemIdentity);
+            }
+            twillPreparer = ((SecureTwillPreparer) twillPreparer).withSecuritySecret(runnable);
+          }
         }
 
         if (options.isDebug()) {
@@ -273,11 +282,6 @@ public abstract class DistributedProgramRunner implements ProgramRunner, Program
         if (schedulerQueueName != null && !schedulerQueueName.isEmpty()) {
           LOG.info("Setting scheduler queue for app {} as {}", program.getId(), schedulerQueueName);
           twillPreparer.setSchedulerQueue(schedulerQueueName);
-        }
-
-        // Add SConfiguration if using secrets.
-        if (twillPreparer instanceof SecureTwillPreparer) {
-          twillPreparer = ((SecureTwillPreparer) twillPreparer).withSecuritySecret();
         }
 
         // Set JVM options based on configuration

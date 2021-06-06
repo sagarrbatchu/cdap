@@ -28,7 +28,6 @@ import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.proto.id.NamespacedEntityId;
 import io.cdap.cdap.proto.security.Permission;
 import io.cdap.cdap.proto.security.Principal;
-import io.cdap.cdap.security.spi.authorization.AuthorizationEnforcer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +38,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
- * An implementation of {@link AuthorizationEnforcer} that runs on the master. It calls the authorizer directly to
- * enforce authorization policies.
+ * An implementation of {@link io.cdap.cdap.security.spi.authorization.AccessEnforcer} that runs on the master. It calls
+ * the authorizer directly to enforce authorization policies.
  */
 @Singleton
 public class DefaultAccessEnforcer extends AbstractAccessEnforcer {

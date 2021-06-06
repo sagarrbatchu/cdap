@@ -16,10 +16,15 @@
 
 package io.cdap.cdap.security.auth.context;
 
+import com.google.common.base.Throwables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
 import io.cdap.cdap.security.spi.authentication.AuthenticationContext;
 import io.cdap.cdap.security.spi.authentication.SecurityRequestContext;
+import org.apache.hadoop.security.UserGroupInformation;
+
+import java.io.IOException;
 
 /**
  * Exposes the right {@link AuthenticationContext} via an {@link AbstractModule} based on the context in which
@@ -37,6 +42,7 @@ public class AuthenticationContextModules {
       @Override
       protected void configure() {
         bind(AuthenticationContext.class).to(MasterAuthenticationContext.class);
+        bind(SystemAuthenticationContext.class).in(Scopes.SINGLETON);
       }
     };
   }
@@ -45,13 +51,26 @@ public class AuthenticationContextModules {
    * An {@link AuthenticationContext} for use in program containers. The authentication details in this context are
    * self-contained and are generated based on the locally-mounted secrets.
    */
-  public Module getProgramContainerModule() {
+  public Module getProgramContainerModule(boolean enforceInternalAuth) {
     return new AbstractModule() {
       @Override
       protected void configure() {
-        bind(AuthenticationContext.class).to(ProgramContainerAuthenticationContext.class);
+        if (enforceInternalAuth) {
+          bind(AuthenticationContext.class).to(SystemAuthenticationContext.class);
+        } else {
+          bind(AuthenticationContext.class).to(ProgramContainerAuthenticationContext.class);
+        }
+        bind(SystemAuthenticationContext.class).in(Scopes.SINGLETON);
       }
     };
+  }
+
+  private String getUsername() {
+    try {
+      return UserGroupInformation.getCurrentUser().getShortUserName();
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
   }
 
   /**

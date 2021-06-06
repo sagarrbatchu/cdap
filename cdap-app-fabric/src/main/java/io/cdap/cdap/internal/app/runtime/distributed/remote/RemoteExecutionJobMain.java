@@ -39,6 +39,7 @@ import io.cdap.cdap.internal.app.runtime.distributed.runtimejob.DefaultRuntimeJo
 import io.cdap.cdap.runtime.spi.provisioner.ClusterProperties;
 import io.cdap.cdap.runtime.spi.runtimejob.RuntimeJobEnvironment;
 import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
+import io.cdap.cdap.security.guice.SecurityModules;
 import io.cdap.cdap.security.impersonation.CurrentUGIProvider;
 import io.cdap.cdap.security.impersonation.UGIProvider;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -139,7 +140,8 @@ public class RemoteExecutionJobMain {
       new DFSLocationModule(),
       new InMemoryDiscoveryModule(),
       new TwillModule(),
-      new AuthenticationContextModules().getProgramContainerModule(),
+      new AuthenticationContextModules().getProgramContainerModule(cConf.getBoolean(Constants.Security.Internal
+                                                                                      .ENFORCE_INTERNAL_AUTH)),
       new AbstractModule() {
         @Override
         protected void configure() {
@@ -159,7 +161,8 @@ public class RemoteExecutionJobMain {
             }
           });
         }
-      }
+      },
+      new SecurityModules().getStandaloneModules()
     );
 
     Map<String, String> properties = new HashMap<>();

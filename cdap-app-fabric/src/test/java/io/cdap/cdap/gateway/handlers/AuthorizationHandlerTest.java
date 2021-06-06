@@ -93,12 +93,12 @@ public class AuthorizationHandlerTest {
         public Authorizer get() {
           return auth;
         }
-      }, conf, new MasterAuthenticationContext()))
+      }, conf, new MasterAuthenticationContext(conf, null)))
       .setChannelPipelineModifier(new ChannelPipelineModifier() {
         @Override
         public void modify(ChannelPipeline pipeline) {
           pipeline.addBefore("dispatcher", "usernamesetter", new TestUserNameSetter());
-          pipeline.addAfter("usernamesetter", "authenticator", new AuthenticationChannelHandler());
+          pipeline.addAfter("usernamesetter", "authenticator", new AuthenticationChannelHandler(false));
         }
       })
       .build();
@@ -147,7 +147,7 @@ public class AuthorizationHandlerTest {
         public Authorizer get() {
           return authorizer;
         }
-      }, cConf, new MasterAuthenticationContext()))
+      }, cConf, new MasterAuthenticationContext(cConf, null)))
       .build();
     service.start();
     try {

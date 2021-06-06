@@ -37,9 +37,15 @@ import org.slf4j.LoggerFactory;
 public class AuthenticationChannelHandler extends ChannelInboundHandlerAdapter {
   private static final Logger LOG = LoggerFactory.getLogger(AuthenticationChannelHandler.class);
 
+  private final boolean enforceAuthenticatedRequests;
+
   private String currentUserId;
   private String currentUserCredential;
   private String currentUserIP;
+
+  public AuthenticationChannelHandler(boolean enforceAuthenticatedRequests) {
+    this.enforceAuthenticatedRequests = enforceAuthenticatedRequests;
+  }
 
   /**
    * Decode the AccessTokenIdentifier passed as a header and set it in a ThreadLocal.
@@ -51,6 +57,9 @@ public class AuthenticationChannelHandler extends ChannelInboundHandlerAdapter {
       // TODO: authenticate the user using user id - CDAP-688
       HttpRequest request = (HttpRequest) msg;
       currentUserId = request.headers().get(Constants.Security.Headers.USER_ID);
+      if (enforceAuthenticatedRequests && currentUserId == null) {
+        throw new IllegalArgumentException("Missing user ID header");
+      }
       currentUserIP = request.headers().get(Constants.Security.Headers.USER_IP);
       String authHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
       LOG.trace("Got user ID '{}', user IP '{}', and authorization header length '{}'", currentUserId, currentUserIP,
@@ -58,16 +67,30 @@ public class AuthenticationChannelHandler extends ChannelInboundHandlerAdapter {
       if (authHeader != null) {
         int idx = authHeader.trim().indexOf(' ');
         if (idx < 0) {
-          LOG.warn("Invalid Authorization header format for {}@{}", currentUserId, currentUserIP);
+          LOG.error("Invalid Authorization header format for {}@{}", currentUserId, currentUserIP);
+          if (enforceAuthenticatedRequests) {
+            throw new IllegalArgumentException("Invalid Authorization header format");
+          }
         } else {
           currentUserCredential = authHeader.substring(idx + 1).trim();
           SecurityRequestContext.setUserCredential(currentUserCredential);
         }
+      } else if (enforceAuthenticatedRequests) {
+        throw new IllegalArgumentException("Missing authorization header");
       }
 
       SecurityRequestContext.setUserId(currentUserId);
       SecurityRequestContext.setUserIP(currentUserIP);
     } else if (msg instanceof HttpContent) {
+      // TODO: If this is intended to handle chunking, there might be a race condition here which may need investigation
+      if (enforceAuthenticatedRequests) {
+        if (currentUserId == null) {
+          throw new IllegalArgumentException("Missing user ID for HTTP content request");
+        }
+        if (currentUserCredential == null) {
+          throw new IllegalArgumentException("Missing user credential for HTTP content request");
+        }
+      }
       SecurityRequestContext.setUserId(currentUserId);
       SecurityRequestContext.setUserCredential(currentUserCredential);
       SecurityRequestContext.setUserIP(currentUserIP);

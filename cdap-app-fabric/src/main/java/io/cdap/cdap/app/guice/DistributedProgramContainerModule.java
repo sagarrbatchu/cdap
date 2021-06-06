@@ -116,7 +116,7 @@ public class DistributedProgramContainerModule extends AbstractModule {
     List<Module> modules = getCoreModules();
 
     AuthenticationContextModules authModules = new AuthenticationContextModules();
-    modules.add(authModules.getProgramContainerModule());
+    modules.add(authModules.getProgramContainerModule(cConf.getBoolean(Constants.Security.Internal.ENFORCE_INTERNAL_AUTH)));
 
     install(Modules.override(modules).with(new AbstractModule() {
       @Override

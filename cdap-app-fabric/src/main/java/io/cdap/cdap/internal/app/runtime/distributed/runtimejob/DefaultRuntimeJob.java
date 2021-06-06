@@ -345,7 +345,8 @@ public class DefaultRuntimeJob implements RuntimeJob {
     modules.add(new IOModule());
     modules.add(new TMSLogAppenderModule());
     modules.add(new RemoteExecutionDiscoveryModule());
-    modules.add(new AuthenticationContextModules().getProgramContainerModule());
+    modules.add(new AuthenticationContextModules()
+                  .getProgramContainerModule(cConf.getBoolean(Constants.Security.Internal.ENFORCE_INTERNAL_AUTH)));
     modules.add(new MetricsClientRuntimeModule().getDistributedModules());
     modules.add(new MessagingServerRuntimeModule().getStandaloneModules());
 

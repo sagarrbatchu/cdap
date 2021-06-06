@@ -1214,20 +1214,6 @@ public final class Constants {
       public static final String SSL_TRUSTSTORE_PASSWORD = "security.auth.server.ssl.truststore.password";
     }
 
-    /**
-     * Configurations for setting Twill-related identity.
-     */
-    public static final class TwillIdentity {
-      /**
-       * User identity for Twill runnables which execute user code.
-       */
-      public static final String IDENTITY_USER = "security.twill.identity.user";
-      /**
-       * System identity for Twill runnables which do not execute user code.
-       */
-      public static final String IDENTITY_SYSTEM = "security.twill.identity.system";
-    }
-
     /** Path to the Kerberos keytab file used by CDAP master */
     public static final String CFG_CDAP_MASTER_KRB_KEYTAB_PATH = "cdap.master.kerberos.keytab";
     /** Kerberos principal used by CDAP master */
@@ -1593,5 +1579,24 @@ public final class Constants {
      * Number of executor threads used to auto install resources when a capability is enabled
      */
     public static final String AUTO_INSTALL_THREADS = "capability.autoinstall.threads";
+  }
+
+  /**
+   * Constants for Twill.
+   */
+  public static final class Twill {
+    /**
+     * Constants for Twill's security-related extension methods.
+     */
+    public static final class Security {
+      /**
+       * User identity for Twill runnables which execute user code.
+       */
+      public static final String IDENTITY_USER = "twill.security.identity.user";
+      /**
+       * System identity for Twill runnables which do not execute user code.
+       */
+      public static final String IDENTITY_SYSTEM = "twill.security.identity.system";
+    }
   }
 }

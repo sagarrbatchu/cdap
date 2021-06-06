@@ -261,9 +261,9 @@ public abstract class DistributedProgramRunner implements ProgramRunner, Program
           twillPreparer.setLogLevels(runnable, transformLogLevels(runnableDefinition.getLogLevels()));
           twillPreparer.withConfiguration(runnable, runnableDefinition.getTwillRunnableConfigs());
 
-          // Add SConfiguration if using secrets, and set the runnable identity.
+          // Add cdap-security.xml if using secrets, and set the runnable identity.
           if (twillPreparer instanceof SecureTwillPreparer) {
-            String twillSystemIdentity = cConf.get(Constants.Security.TwillIdentity.IDENTITY_SYSTEM);
+            String twillSystemIdentity = cConf.get(Constants.Twill.Security.IDENTITY_SYSTEM);
             if (twillSystemIdentity != null) {
               twillPreparer = ((SecureTwillPreparer) twillPreparer).withIdentity(runnable, twillSystemIdentity);
             }

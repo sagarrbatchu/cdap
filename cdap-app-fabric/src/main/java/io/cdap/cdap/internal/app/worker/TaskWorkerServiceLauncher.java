@@ -157,7 +157,7 @@ public class TaskWorkerServiceLauncher extends AbstractScheduledService {
           }
 
           if (twillPreparer instanceof SecureTwillPreparer) {
-            String twillUserIdentity = cConf.get(Constants.Security.TwillIdentity.IDENTITY_USER);
+            String twillUserIdentity = cConf.get(Constants.Twill.Security.IDENTITY_USER);
             if (twillUserIdentity != null) {
               twillPreparer = ((SecureTwillPreparer) twillPreparer)
                 .withIdentity(TaskWorkerTwillRunnable.class.getSimpleName(), twillUserIdentity);

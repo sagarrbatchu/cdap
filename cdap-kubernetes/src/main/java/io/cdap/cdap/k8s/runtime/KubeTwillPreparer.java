@@ -146,7 +146,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
   private final String resourcePrefix;
   private final Map<String, String> extraLabels;
   private String schedulerQueue;
-  private final Map<String, String> runnableServiceAccounts;
+  private String serviceAccountName;
   private final Set<String> sConfMountedRunnables;
 
   KubeTwillPreparer(MasterEnvironmentContext masterEnvContext, ApiClient apiClient, String kubeNamespace,
@@ -173,7 +173,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
     this.twillSpec = spec;
     this.resourcePrefix = resourcePrefix;
     this.extraLabels = extraLabels;
-    this.runnableServiceAccounts = new HashMap<>();
+    this.serviceAccountName = null;
     this.sConfMountedRunnables = new HashSet<>();
   }
 
@@ -200,7 +200,12 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
       throw new IllegalArgumentException("Runnable " + runnableName + " not found");
     }
     // In Kubernetes, the identity represents the service account used to run the pod.
-    runnableServiceAccounts.put(runnableName, identity);
+    // The service account cannot be set at a container level, so we simply set it for all containers and throw an
+    // exception if there are multiple calls to withIdentity with different names.
+    if (serviceAccountName != null && !serviceAccountName.equals(identity)) {
+      throw new IllegalArgumentException("KubeTwillPreparer does not support setting per-container service accounts.");
+    }
+    serviceAccountName = identity;
     return this;
   }
 
@@ -748,7 +753,9 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer, SecureT
     if (schedulerQueue != null) {
       podSpecBuilder = podSpecBuilder.withPriorityClassName(schedulerQueue);
     }
-    String serviceAccountName = runnableServiceAccounts.getOrDefault(runnableName, podInfo.getServiceAccountName());
+    if (serviceAccountName == null) {
+      serviceAccountName = podInfo.getServiceAccountName();
+    }
     return podSpecBuilder
       .withServiceAccountName(serviceAccountName)
       .withRuntimeClassName(podInfo.getRuntimeClassName())

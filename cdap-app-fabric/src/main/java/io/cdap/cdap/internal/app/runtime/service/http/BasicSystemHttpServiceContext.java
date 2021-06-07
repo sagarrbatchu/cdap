@@ -32,6 +32,7 @@ import io.cdap.cdap.app.program.Program;
 import io.cdap.cdap.app.runtime.ProgramOptions;
 import io.cdap.cdap.common.NotFoundException;
 import io.cdap.cdap.common.conf.CConfiguration;
+import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.namespace.NamespaceQueryAdmin;
 import io.cdap.cdap.data2.dataset2.DatasetFramework;
 import io.cdap.cdap.data2.metadata.writer.FieldLineageWriter;
@@ -70,6 +71,7 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
   private final TransactionRunner transactionRunner;
   private final PreferencesFetcher preferencesFetcher;
   private final RemoteTaskExecutor remoteTaskExecutor;
+  private final CConfiguration cConf;
 
   /**
    * Creates a BasicSystemHttpServiceContext.
@@ -94,6 +96,7 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
     this.namespaceId = program.getId().getNamespaceId();
     this.transactionRunner = transactionRunner;
     this.preferencesFetcher = preferencesFetcher;
+    this.cConf = cConf;
     this.remoteTaskExecutor = new RemoteTaskExecutor(cConf, discoveryServiceClient);
   }
 
@@ -152,7 +155,14 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
     String systemAppParam = GSON.toJson(runnableTaskRequest);
     RunnableTaskRequest taskRequest = RunnableTaskRequest.getBuilder(systemAppClassName)
       .withParam(systemAppParam)
+      .withNamespace(getNamespace())
+      .withArtifact(getArtifactId().toApiArtifactId())
       .build();
     return remoteTaskExecutor.runTask(taskRequest);
+  }
+
+  @Override
+  public boolean remoteExecutionEnabled() {
+    return cConf.getBoolean(Constants.TaskWorker.POOL_ENABLE, false);
   }
 }

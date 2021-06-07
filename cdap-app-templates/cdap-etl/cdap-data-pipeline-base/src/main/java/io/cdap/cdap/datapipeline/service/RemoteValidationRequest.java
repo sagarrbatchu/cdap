@@ -14,22 +14,27 @@
  * the License.
  */
 
-package io.cdap.cdap.internal.app.worker;
-
-import com.google.inject.Guice;
-import io.cdap.cdap.common.conf.CConfiguration;
-import io.cdap.cdap.common.conf.SConfiguration;
-import org.junit.Test;
-
-import java.util.Collections;
+package io.cdap.cdap.datapipeline.service;
 
 /**
- * Test for SystemAppModule
+ * RemoteValidationRequest
  */
-public class SystemAppModuleTest {
+public class RemoteValidationRequest {
 
-  @Test
-  public void test() {
-    Guice.createInjector(Collections.singleton(new SystemAppModule(CConfiguration.create(), SConfiguration.create())));
+  private final String namespace;
+  //The original serialized request
+  private final String serializedRequest;
+
+  public RemoteValidationRequest(String namespace, String serializedRequest) {
+    this.namespace = namespace;
+    this.serializedRequest = serializedRequest;
+  }
+
+  public String getNamespace() {
+    return namespace;
+  }
+
+  public String getSerializedRequest() {
+    return serializedRequest;
   }
 }

@@ -20,19 +20,22 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import io.cdap.cdap.app.guice.DefaultProgramRunnerFactory;
+import io.cdap.cdap.app.guice.DistributedArtifactManagerModule;
 import io.cdap.cdap.app.runtime.ProgramRunner;
 import io.cdap.cdap.app.runtime.ProgramRunnerFactory;
 import io.cdap.cdap.app.runtime.ProgramRuntimeProvider;
 import io.cdap.cdap.app.runtime.ProgramStateWriter;
-import io.cdap.cdap.common.guice.ConfigModule;
-import io.cdap.cdap.common.guice.DFSLocationModule;
+import io.cdap.cdap.common.conf.CConfiguration;
+import io.cdap.cdap.common.conf.SConfiguration;
 import io.cdap.cdap.common.guice.IOModule;
 import io.cdap.cdap.common.guice.KafkaClientModule;
+import io.cdap.cdap.common.guice.LocalLocationModule;
 import io.cdap.cdap.common.guice.SupplierProviderBridge;
 import io.cdap.cdap.common.guice.ZKClientModule;
 import io.cdap.cdap.common.guice.ZKDiscoveryModule;
 import io.cdap.cdap.common.namespace.guice.NamespaceQueryAdminModule;
 import io.cdap.cdap.data.runtime.DataFabricModules;
+import io.cdap.cdap.data.runtime.DataSetsModules;
 import io.cdap.cdap.data2.metadata.writer.DefaultMetadataServiceClient;
 import io.cdap.cdap.data2.metadata.writer.MetadataServiceClient;
 import io.cdap.cdap.internal.app.program.MessagingProgramStateWriter;
@@ -45,9 +48,13 @@ import io.cdap.cdap.logging.guice.RemoteLogAppenderModule;
 import io.cdap.cdap.master.environment.MasterEnvironments;
 import io.cdap.cdap.master.spi.environment.MasterEnvironment;
 import io.cdap.cdap.messaging.guice.MessagingClientModule;
+import io.cdap.cdap.metadata.PreferencesFetcher;
+import io.cdap.cdap.metadata.RemotePreferencesFetcherInternal;
 import io.cdap.cdap.metrics.guice.MetricsClientRuntimeModule;
 import io.cdap.cdap.proto.ProgramType;
 import io.cdap.cdap.security.auth.context.MasterAuthenticationContext;
+import io.cdap.cdap.security.authorization.AuthorizationEnforcementModule;
+import io.cdap.cdap.security.guice.SecureStoreClientModule;
 import io.cdap.cdap.security.impersonation.CurrentUGIProvider;
 import io.cdap.cdap.security.impersonation.DefaultImpersonator;
 import io.cdap.cdap.security.impersonation.Impersonator;
@@ -61,9 +68,18 @@ import org.apache.twill.discovery.DiscoveryServiceClient;
  */
 public class SystemAppModule extends AbstractModule {
 
+  private final CConfiguration cConf;
+  private final SConfiguration sConf;
+
+  SystemAppModule(CConfiguration cConf, SConfiguration sConf) {
+    this.cConf = cConf;
+    this.sConf = sConf;
+  }
+
   @Override
   protected void configure() {
-    install(new ConfigModule());
+    bind(CConfiguration.class).toInstance(cConf);
+    bind(SConfiguration.class).toInstance(sConf);
     MasterEnvironment masterEnv = MasterEnvironments.getMasterEnvironment();
 
     if (masterEnv == null) {
@@ -96,12 +112,17 @@ public class SystemAppModule extends AbstractModule {
     bind(ArtifactRepositoryReader.class).to(RemoteArtifactRepositoryReader.class).in(Scopes.SINGLETON);
     bind(ArtifactRepository.class).to(DefaultArtifactRepository.class).in(Scopes.SINGLETON);
     bind(Impersonator.class).to(DefaultImpersonator.class).in(Scopes.SINGLETON);
+    bind(PreferencesFetcher.class).to(RemotePreferencesFetcherInternal.class).in(Scopes.SINGLETON);
 
+    install(new DistributedArtifactManagerModule());
     install(new IOModule());
-    install(new DFSLocationModule());
+    install(new LocalLocationModule());
     install(new MessagingClientModule());
+    install(new AuthorizationEnforcementModule().getDistributedModules());
     install(new NamespaceQueryAdminModule());
     install(new MetricsClientRuntimeModule().getDistributedModules());
     install(new DataFabricModules("task-worker").getDistributedModules());
+    install(new DataSetsModules().getDistributedModules());
+    install(new SecureStoreClientModule());
   }
 }

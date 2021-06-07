@@ -16,19 +16,43 @@
 
 package io.cdap.cdap.internal.app.worker;
 
+import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
+import io.cdap.cdap.api.artifact.ArtifactId;
 import io.cdap.cdap.api.artifact.CloseableClassLoader;
+import io.cdap.cdap.api.security.store.SecureStore;
+import io.cdap.cdap.api.security.store.SecureStoreManager;
 import io.cdap.cdap.api.service.worker.RunnableTask;
 import io.cdap.cdap.api.service.worker.RunnableTaskContext;
 import io.cdap.cdap.api.service.worker.RunnableTaskRequest;
+import io.cdap.cdap.api.service.worker.TaskSystemAppContext;
+import io.cdap.cdap.common.NotFoundException;
+import io.cdap.cdap.common.conf.CConfiguration;
+import io.cdap.cdap.common.conf.Constants;
+import io.cdap.cdap.common.conf.SConfiguration;
 import io.cdap.cdap.common.id.Id;
+import io.cdap.cdap.common.namespace.NamespaceQueryAdmin;
+import io.cdap.cdap.common.service.RetryStrategies;
+import io.cdap.cdap.common.service.RetryStrategy;
+import io.cdap.cdap.data2.dataset2.DatasetFramework;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactDetail;
+import io.cdap.cdap.internal.app.runtime.artifact.ArtifactManagerFactory;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactRepository;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactRepositoryReader;
+import io.cdap.cdap.internal.app.runtime.artifact.PluginFinder;
+import io.cdap.cdap.messaging.MessagingService;
+import io.cdap.cdap.metadata.PreferencesFetcher;
 import io.cdap.cdap.security.impersonation.EntityImpersonator;
 import io.cdap.cdap.security.impersonation.Impersonator;
+import org.apache.twill.discovery.DiscoveryServiceClient;
+import org.apache.twill.filesystem.Location;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * SystemAppTask launches a task created by system app with application classloader
@@ -36,34 +60,78 @@ import io.cdap.cdap.security.impersonation.Impersonator;
 public class SystemAppTask implements RunnableTask {
 
   private static final Gson GSON = new Gson();
+  private CConfiguration cConf;
+  private SConfiguration sConf;
+
+  @Inject
+  SystemAppTask(CConfiguration cConf, SConfiguration sConf) {
+    this.cConf = cConf;
+    this.sConf = sConf;
+  }
 
   @Override
   public void run(RunnableTaskContext context) throws Exception {
-    RunnableTaskRequest taskRequest = GSON.fromJson(context.getParam(), RunnableTaskRequest.class);
-    Injector injector = Guice.createInjector(new SystemAppModule());
+    Injector injector = Guice.createInjector(new SystemAppModule(cConf, sConf));
     ArtifactRepositoryReader artifactRepositoryReader = injector.getInstance(ArtifactRepositoryReader.class);
     ArtifactRepository artifactRepository = injector.getInstance(ArtifactRepository.class);
     Impersonator impersonator = injector.getInstance(Impersonator.class);
+    ArtifactId systemAppArtifactId = context.getArtifactId();
+    String systemAppNamespace = context.getNamespace();
     Id.Artifact artifactId = Id.Artifact
-      .from(Id.Namespace.from(taskRequest.getNamespace()), taskRequest.getArtifactId().getName(),
-            taskRequest.getArtifactId().getVersion());
+      .from(Id.Namespace.from(systemAppNamespace), systemAppArtifactId.getName(),
+            systemAppArtifactId.getVersion());
     ArtifactDetail artifactDetail = artifactRepositoryReader.getArtifact(artifactId);
+    streamArtifactIfRequired(artifactId, artifactDetail.getDescriptor().getLocation(), artifactRepository);
+
     EntityImpersonator classLoaderImpersonator = new EntityImpersonator(artifactId.toEntityId(), impersonator);
     try (CloseableClassLoader artifactClassLoader =
            artifactRepository.createArtifactClassLoader(artifactDetail.getDescriptor().getLocation(),
                                                         classLoaderImpersonator)) {
+      RunnableTaskRequest taskRequest = GSON.fromJson(context.getParam(), RunnableTaskRequest.class);
       String taskClassName = taskRequest.getClassName();
       Class<?> clazz = artifactClassLoader.loadClass(taskClassName);
       if (!(RunnableTask.class.isAssignableFrom(clazz))) {
         throw new ClassCastException(String.format("%s is not a RunnableTask", taskClassName));
       }
-
+      TaskSystemAppContext taskSystemAppContext = buildTaskSystemAppContext(injector, systemAppNamespace,
+                                                                            systemAppArtifactId, artifactClassLoader);
       RunnableTask runnableTask = (RunnableTask) injector.getInstance(clazz);
       RunnableTaskContext runnableTaskContext = RunnableTaskContext.getBuilder().
         withParam(taskRequest.getParam()).
-        withArtifactClassLoader(artifactClassLoader).build();
+        withTaskSystemAppContext(taskSystemAppContext).build();
       runnableTask.run(runnableTaskContext);
       context.writeResult(runnableTaskContext.getResult());
+    }
+  }
+
+  private TaskSystemAppContext buildTaskSystemAppContext(Injector injector, String systemAppNamespace,
+                                                         ArtifactId artifactId, ClassLoader artifactClassLoader) {
+    DatasetFramework dsFramework = injector.getInstance(DatasetFramework.class);
+    SecureStoreManager secureStoreManager = injector.getInstance(SecureStoreManager.class);
+    MessagingService messagingService = injector.getInstance(MessagingService.class);
+    NamespaceQueryAdmin namespaceQueryAdmin = injector.getInstance(NamespaceQueryAdmin.class);
+    PreferencesFetcher preferencesFetcher = injector.getInstance(PreferencesFetcher.class);
+    PluginFinder pluginFinder = injector.getInstance(PluginFinder.class);
+    RetryStrategy retryStrategy = RetryStrategies.fromConfiguration(cConf, Constants.Service.TASK_WORKER + ".");
+    DiscoveryServiceClient discoveryServiceClient = injector.getInstance(DiscoveryServiceClient.class);
+    SecureStore secureStore = injector.getInstance(SecureStore.class);
+    ArtifactManagerFactory artifactManagerFactory = injector.getInstance(ArtifactManagerFactory.class);
+    return
+      new DefaultTaskSystemAppContext(cConf, dsFramework, secureStoreManager, messagingService,
+                                      retryStrategy, namespaceQueryAdmin, preferencesFetcher,
+                                      pluginFinder, discoveryServiceClient, secureStore, artifactManagerFactory,
+                                      Constants.Service.TASK_WORKER, systemAppNamespace, artifactId,
+                                      artifactClassLoader);
+  }
+
+  private void streamArtifactIfRequired(Id.Artifact artifactId, Location artifactLocation,
+                                        ArtifactRepository artifactRepository) throws IOException, NotFoundException {
+    if (artifactLocation.exists()) {
+      return;
+    }
+    try (InputStream is = artifactRepository.newInputStream(artifactId);
+         OutputStream os = artifactLocation.getOutputStream()) {
+      ByteStreams.copy(is, os);
     }
   }
 }

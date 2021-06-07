@@ -27,6 +27,7 @@ import io.cdap.cdap.api.artifact.ArtifactId;
 import io.cdap.cdap.api.artifact.ArtifactScope;
 import io.cdap.cdap.api.artifact.ArtifactSummary;
 import io.cdap.cdap.api.artifact.ArtifactVersion;
+import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.macro.MacroEvaluator;
 import io.cdap.cdap.api.macro.MacroParserOptions;
@@ -34,6 +35,7 @@ import io.cdap.cdap.api.security.AccessException;
 import io.cdap.cdap.api.service.http.AbstractSystemHttpServiceHandler;
 import io.cdap.cdap.api.service.http.HttpServiceRequest;
 import io.cdap.cdap.api.service.http.HttpServiceResponder;
+import io.cdap.cdap.api.service.worker.RunnableTaskRequest;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.batch.BatchPipelineSpec;
 import io.cdap.cdap.etl.common.BasicArguments;
@@ -48,6 +50,8 @@ import io.cdap.cdap.etl.proto.v2.validation.StageValidationRequest;
 import io.cdap.cdap.etl.proto.v2.validation.StageValidationResponse;
 import io.cdap.cdap.internal.io.SchemaTypeAdapter;
 import io.cdap.cdap.proto.artifact.AppRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -71,6 +75,7 @@ public class ValidationHandler extends AbstractSystemHttpServiceHandler {
     .serializeNulls()
     .create();
   private static final Type APP_REQUEST_TYPE = new TypeToken<AppRequest<JsonObject>>() { }.getType();
+  private static final Logger LOG = LoggerFactory.getLogger(ValidationHandler.class);
 
   @GET
   @Path("v1/health")
@@ -82,16 +87,36 @@ public class ValidationHandler extends AbstractSystemHttpServiceHandler {
   @Path("v1/contexts/{context}/validations/stage")
   public void validateStage(HttpServiceRequest request, HttpServiceResponder responder,
                             @PathParam("context") String namespace) throws IOException, AccessException {
-    validateLocally(request, responder, namespace);
-  }
-
-  private void validateLocally(HttpServiceRequest request, HttpServiceResponder responder,
-                               String namespace) throws IOException {
     if (!getContext().getAdmin().namespaceExists(namespace)) {
       responder.sendError(HttpURLConnection.HTTP_NOT_FOUND, String.format("Namespace '%s' does not exist", namespace));
       return;
     }
 
+    //Validate remotely if remote execution is enabled
+    if (getContext().remoteExecutionEnabled()) {
+      validateRemotely(request, responder, namespace);
+      return;
+    }
+    validateLocally(request, responder, namespace);
+  }
+
+  private void validateRemotely(HttpServiceRequest request, HttpServiceResponder responder, String namespace) throws
+    IOException {
+    String validationRequestString = StandardCharsets.UTF_8.decode(request.getContent()).toString();
+    RemoteValidationRequest remoteValidationRequest = new RemoteValidationRequest(namespace, validationRequestString);
+    RunnableTaskRequest runnableTaskRequest = RunnableTaskRequest.getBuilder(RemoteValidationTask.class.getName()).
+      withParam(GSON.toJson(remoteValidationRequest)).
+      build();
+    try {
+      byte[] bytes = getContext().runTask(runnableTaskRequest);
+      responder.sendString(Bytes.toString(bytes));
+    } catch (Exception e) {
+      responder.sendError(HttpURLConnection.HTTP_INTERNAL_ERROR, "Error from remote task " + e.getMessage());
+    }
+  }
+
+  private void validateLocally(HttpServiceRequest request, HttpServiceResponder responder,
+                               String namespace) throws IOException {
     StageValidationRequest validationRequest;
     try {
       validationRequest = GSON.fromJson(StandardCharsets.UTF_8.decode(request.getContent()).toString(),

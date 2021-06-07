@@ -44,7 +44,6 @@ import io.kubernetes.client.models.V1ObjectMeta;
 import io.kubernetes.client.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.models.V1PersistentVolumeClaimBuilder;
-import io.kubernetes.client.models.V1PodSecurityContext;
 import io.kubernetes.client.models.V1PodSpec;
 import io.kubernetes.client.models.V1PodSpecBuilder;
 import io.kubernetes.client.models.V1ResourceRequirements;
@@ -146,10 +145,6 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
                     PodInfo podInfo, TwillSpecification spec, RunId twillRunId, Location appLocation,
                     String resourcePrefix, Map<String, String> extraLabels,
                     KubeTwillControllerFactory controllerFactory) {
-    // only expect one runnable for now
-//    if (spec.getRunnables().size() != 1) {
-//      throw new IllegalStateException("Kubernetes runner currently only supports one Twill Runnable");
-//    }
     this.masterEnvContext = masterEnvContext;
     this.apiClient = apiClient;
     this.kubeNamespace = kubeNamespace;
@@ -181,6 +176,11 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
     if (Arrays.stream(disks).map(StatefulDisk::getMountPath).collect(Collectors.toSet()).size() != disks.length) {
       throw new IllegalArgumentException("Each stateful disk must have unique mount path");
     }
+
+    if (statefulRunnables.entrySet().size() > 1 && !statefulRunnables.containsKey(runnableName)) {
+      throw new IllegalArgumentException("Multiple statefulRunnables for a Twill application is not supported");
+    }
+
     statefulRunnables.put(runnableName, new StatefulRunnable(orderedStart, Arrays.asList(disks)));
     return this;
   }
@@ -385,7 +385,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
       }
 
       RuntimeSpecification runtimeSpec = twillSpec.getRunnables().values().iterator().next();
-      StatefulRunnable statefulRunnable = statefulRunnables.get(runtimeSpec.getName());
+      StatefulRunnable statefulRunnable = statefulRunnables.values().iterator().next();
       Type resourceType = statefulRunnable == null ? V1Deployment.class : V1StatefulSet.class;
 
       V1ObjectMeta metadata = createResourceMetadata(resourceType, runtimeSpec.getName(),

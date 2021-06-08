@@ -46,7 +46,7 @@ public class ArtifactLocalizerHttpHandlerInternal extends AbstractHttpHandler {
 
   @Inject
   public ArtifactLocalizerHttpHandlerInternal(CConfiguration cConf) {
-    super(cConf);
+    super();
 
   }
 

@@ -36,7 +36,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Launches an HTTP/HTTPS server for receiving and unpacking and caching artifacts.
+ * Launches an HTTP server for receiving and unpacking and caching artifacts.
  */
 public class ArtifactLocalizerService extends AbstractIdleService {
 
@@ -60,14 +60,10 @@ public class ArtifactLocalizerService extends AbstractIdleService {
     NettyHttpService.Builder builder = new CommonNettyHttpServiceBuilder(cConf, Constants.Service.TASK_WORKER)
       .setHost("127.0.0.1")
       .setPort(cConf.getInt(Constants.ArtifactLocalizer.PORT))
-      .setExecThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.EXEC_THREADS))
       .setBossThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.BOSS_THREADS))
       .setWorkerThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.WORKER_THREADS))
       .setHttpHandlers(new ArtifactLocalizerHttpHandlerInternal(this.cConf));
 
-    if (cConf.getBoolean(Constants.Security.SSL.INTERNAL_ENABLED)) {
-      new HttpsEnabler().configureKeyStore(cConf, sConf).enable(builder);
-    }
     httpService = builder.build();
   }
 

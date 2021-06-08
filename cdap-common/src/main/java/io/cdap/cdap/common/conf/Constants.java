@@ -415,7 +415,6 @@ public final class Constants {
      * Artifact localizer http handler configuration
      */
     public static final String PORT = "artifact.localizer.bind.port";
-    public static final String EXEC_THREADS = "artifact.localizer.exec.threads";
     public static final String BOSS_THREADS = "artifact.localizer.boss.threads";
     public static final String WORKER_THREADS = "artifact.localizer.worker.threads";
   }

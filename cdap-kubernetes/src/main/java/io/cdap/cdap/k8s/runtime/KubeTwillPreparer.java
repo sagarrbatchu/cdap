@@ -729,7 +729,6 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
 
   private List<V1Container> createContainers(List<RuntimeSpecification> runtimeSpecs, String workDir,
                                              List<V1VolumeMount> volumeMounts) {
-
     // Setup the container environment. Inherit everything from the current pod.
     Map<String, String> environs = podInfo.getContainerEnvironments().stream()
       .collect(Collectors.toMap(V1EnvVar::getName, V1EnvVar::getValue));

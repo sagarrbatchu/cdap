@@ -4376,14 +4376,6 @@
   </property>
 
   <property>
-    <name>artifact.localizer.exec.threads</name>
-    <value>10</value>
-    <description>
-      The number of executor threads for the artifact localizer
-    </description>
-  </property>
-
-  <property>
     <name>artifact.localizer.boss.threads</name>
     <value>1</value>
     <description>

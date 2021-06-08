@@ -22,9 +22,9 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
-import io.cdap.cdap.logging.gateway.handlers.AbstractLogHttpHandler;
 import io.cdap.cdap.proto.BasicThrowable;
 import io.cdap.cdap.proto.codec.BasicThrowableCodec;
+import io.cdap.http.AbstractHttpHandler;
 import io.cdap.http.HttpHandler;
 import io.cdap.http.HttpResponder;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -39,7 +39,7 @@ import javax.ws.rs.Path;
  */
 @Singleton
 @Path(Constants.Gateway.INTERNAL_API_VERSION_3 + "/worker")
-public class ArtifactLocalizerHttpHandlerInternal extends AbstractLogHttpHandler {
+public class ArtifactLocalizerHttpHandlerInternal extends AbstractHttpHandler {
   private static final Logger LOG = LoggerFactory.getLogger(ArtifactLocalizerHttpHandlerInternal.class);
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(BasicThrowable.class, new BasicThrowableCodec()).create();
@@ -53,15 +53,7 @@ public class ArtifactLocalizerHttpHandlerInternal extends AbstractLogHttpHandler
   @GET
   @Path("/localize")
   public void run(FullHttpRequest request, HttpResponder responder) {
-
+    //implementation will be added in a followup PR.
   }
 
-  /**
-   * Return json representation of an exception.
-   * Used to propagate exception across network for better surfacing errors and debuggability.
-   */
-  private String exceptionToJson(Exception ex) {
-    BasicThrowable basicThrowable = new BasicThrowable(ex);
-    return GSON.toJson(basicThrowable);
-  }
 }

@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.common.service.RetryStrategies;
 import io.cdap.cdap.logging.appender.AbstractLogPublisher;
@@ -62,18 +63,21 @@ public class RemoteLogAppender extends LogAppender {
   private final CConfiguration cConf;
   private final DiscoveryServiceClient discoveryServiceClient;
   private final AtomicReference<RemoteLogPublisher> publisher;
+  private final RemoteAuthenticator authenticator;
 
   @Inject
-  public RemoteLogAppender(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient) {
+  public RemoteLogAppender(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient,
+                           RemoteAuthenticator authenticator) {
     setName(APPENDER_NAME);
     this.cConf = cConf;
     this.discoveryServiceClient = discoveryServiceClient;
     this.publisher = new AtomicReference<>();
+    this.authenticator = authenticator;
   }
 
   @Override
   public void start() {
-    RemoteLogPublisher publisher = new RemoteLogPublisher(cConf, discoveryServiceClient);
+    RemoteLogPublisher publisher = new RemoteLogPublisher(cConf, discoveryServiceClient, authenticator);
     Optional.ofNullable(this.publisher.getAndSet(publisher)).ifPresent(RemoteLogPublisher::stopAndWait);
     publisher.startAndWait();
     addInfo("Successfully started " + APPENDER_NAME);
@@ -111,7 +115,7 @@ public class RemoteLogAppender extends LogAppender {
     private final DatumWriter<List<ByteBuffer>> datumWriter;
     private final RemoteClient remoteClient;
 
-    private RemoteLogPublisher(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient) {
+    private RemoteLogPublisher(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient, RemoteAuthenticator authenticator) {
       super(cConf.getInt(Constants.Logging.APPENDER_QUEUE_SIZE, 512),
             RetryStrategies.fromConfiguration(cConf, "system.log.process."));
       this.numPartitions = cConf.getInt(Constants.Logging.NUM_PARTITIONS);
@@ -122,7 +126,7 @@ public class RemoteLogAppender extends LogAppender {
       // not using ThreadLocal for datumWriter
       this.datumWriter = new GenericDatumWriter<>(Schema.createArray(Schema.create(Schema.Type.BYTES)));
       this.remoteClient = new RemoteClient(discoveryServiceClient, Constants.Service.LOG_BUFFER_SERVICE,
-                                           new DefaultHttpRequestConfig(false), "/v1/logs");
+                                           new DefaultHttpRequestConfig(false), "/v1/logs", authenticator);
     }
 
     @Override

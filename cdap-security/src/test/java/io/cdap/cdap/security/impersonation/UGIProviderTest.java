@@ -163,7 +163,7 @@ public class UGIProviderTest {
       discoveryService.register(new Discoverable(Constants.Service.APP_FABRIC_HTTP, httpService.getBindAddress()));
 
       RemoteUGIProvider ugiProvider = new RemoteUGIProvider(cConf, discoveryService, locationFactory,
-                                                            ownerAdmin);
+                                                            ownerAdmin, null);
 
       ImpersonationRequest aliceImpRequest = new ImpersonationRequest(aliceEntity, ImpersonatedOpType.OTHER);
       UGIWithPrincipal aliceUGIWithPrincipal = ugiProvider.getConfiguredUGI(aliceImpRequest);

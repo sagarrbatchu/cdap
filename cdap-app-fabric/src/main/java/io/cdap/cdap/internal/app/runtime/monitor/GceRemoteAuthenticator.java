@@ -45,6 +45,11 @@ public class GceRemoteAuthenticator extends RemoteAuthenticator {
   }
 
   @Override
+  public boolean hasCredential() {
+    return true;
+  }
+
+  @Override
   public String getCredentials() throws IOException {
     return getAccessToken().getToken();
   }

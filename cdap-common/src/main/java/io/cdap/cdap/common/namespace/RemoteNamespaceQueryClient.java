@@ -20,6 +20,7 @@ import com.google.inject.Inject;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.security.spi.authentication.AuthenticationContext;
 import io.cdap.cdap.security.spi.authorization.UnauthorizedException;
@@ -41,9 +42,10 @@ public class RemoteNamespaceQueryClient extends AbstractNamespaceQueryClient {
 
   @Inject
   RemoteNamespaceQueryClient(final DiscoveryServiceClient discoveryClient, CConfiguration cConf,
-                             AuthenticationContext authenticationContext) {
+                             AuthenticationContext authenticationContext, RemoteAuthenticator authenticator) {
     this.remoteClient = new RemoteClient(discoveryClient, Constants.Service.APP_FABRIC_HTTP,
-                                         new DefaultHttpRequestConfig(false), Constants.Gateway.API_VERSION_3);
+                                         new DefaultHttpRequestConfig(false), Constants.Gateway.API_VERSION_3,
+                                         authenticator);
     this.authenticationContext = authenticationContext;
   }
 

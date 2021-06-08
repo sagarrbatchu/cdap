@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import io.cdap.cdap.app.preview.PreviewRequest;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.security.spi.authorization.UnauthorizedException;
 import io.cdap.common.http.HttpMethod;
@@ -44,10 +45,11 @@ public class RemotePreviewRequestFetcher implements PreviewRequestFetcher {
 
   @Inject
   RemotePreviewRequestFetcher(DiscoveryServiceClient discoveryServiceClient,
-                              PreviewRequestPollerInfoProvider pollerInfoProvider) {
+                              PreviewRequestPollerInfoProvider pollerInfoProvider, RemoteAuthenticator authenticator) {
     this.remoteClientInternal = new RemoteClient(discoveryServiceClient, Constants.Service.PREVIEW_HTTP,
                                                  new DefaultHttpRequestConfig(false),
-                                                 Constants.Gateway.INTERNAL_API_VERSION_3 + "/previews");
+                                                 Constants.Gateway.INTERNAL_API_VERSION_3 + "/previews",
+                                                 authenticator);
     this.pollerInfoProvider = pollerInfoProvider;
   }
 

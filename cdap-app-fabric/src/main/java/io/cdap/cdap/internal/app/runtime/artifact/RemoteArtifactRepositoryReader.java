@@ -29,6 +29,7 @@ import io.cdap.cdap.common.ServiceUnavailableException;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
 import io.cdap.cdap.common.id.Id;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.common.io.Locations;
 import io.cdap.cdap.gateway.handlers.AppLifecycleHttpHandler;
@@ -67,11 +68,11 @@ public class RemoteArtifactRepositoryReader implements ArtifactRepositoryReader 
   private final LocationFactory locationFactory;
 
   @Inject
-  public RemoteArtifactRepositoryReader(DiscoveryServiceClient discoveryClient,
-                                        LocationFactory locationFactory) {
+  public RemoteArtifactRepositoryReader(DiscoveryServiceClient discoveryClient, LocationFactory locationFactory,
+                                        RemoteAuthenticator authenticator) {
     this.remoteClient = new RemoteClient(
       discoveryClient, Constants.Service.APP_FABRIC_HTTP,
-      new DefaultHttpRequestConfig(false), Constants.Gateway.INTERNAL_API_VERSION_3);
+      new DefaultHttpRequestConfig(false), Constants.Gateway.INTERNAL_API_VERSION_3, authenticator);
     this.locationFactory = locationFactory;
   }
 

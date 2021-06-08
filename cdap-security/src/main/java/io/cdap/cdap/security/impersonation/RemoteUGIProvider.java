@@ -23,6 +23,7 @@ import io.cdap.cdap.api.security.AccessException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.common.security.AuthEnforceUtil;
 import io.cdap.cdap.proto.codec.EntityIdTypeAdapter;
@@ -63,10 +64,10 @@ public class RemoteUGIProvider extends AbstractCachedUGIProvider {
 
   @Inject
   RemoteUGIProvider(CConfiguration cConf, final DiscoveryServiceClient discoveryClient,
-                    LocationFactory locationFactory, OwnerAdmin ownerAdmin) {
+                    LocationFactory locationFactory, OwnerAdmin ownerAdmin, RemoteAuthenticator authenticator) {
     super(cConf, ownerAdmin);
     this.remoteClient = new RemoteClient(discoveryClient, Constants.Service.APP_FABRIC_HTTP,
-                                         new DefaultHttpRequestConfig(false), "/v1/");
+                                         new DefaultHttpRequestConfig(false), "/v1/", authenticator);
     this.locationFactory = locationFactory;
   }
 

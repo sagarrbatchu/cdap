@@ -38,6 +38,7 @@ import io.cdap.cdap.app.runtime.ProgramOptions;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.http.AuthenticationChannelHandler;
 import io.cdap.cdap.common.http.CommonNettyHttpServiceBuilder;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.lang.InstantiatorFactory;
 import io.cdap.cdap.common.lang.PropertyFieldSetter;
 import io.cdap.cdap.common.logging.LoggingContext;
@@ -82,6 +83,7 @@ public class ServiceHttpServer extends AbstractServiceHttpServer<HttpServiceHand
   private final AtomicInteger instanceCount;
   private final BasicHttpServiceContextFactory contextFactory;
   private final NamespaceQueryAdmin namespaceQueryAdmin;
+  private final RemoteAuthenticator authenticator;
 
   public ServiceHttpServer(String host, Program program, ProgramOptions programOptions,
                            CConfiguration cConf, ServiceSpecification spec,
@@ -94,7 +96,8 @@ public class ServiceHttpServer extends AbstractServiceHttpServer<HttpServiceHand
                            ArtifactManager artifactManager, MetadataReader metadataReader,
                            MetadataPublisher metadataPublisher, NamespaceQueryAdmin namespaceQueryAdmin,
                            PluginFinder pluginFinder, FieldLineageWriter fieldLineageWriter,
-                           TransactionRunner transactionRunner, PreferencesFetcher preferencesFetcher) {
+                           TransactionRunner transactionRunner, PreferencesFetcher preferencesFetcher,
+                           RemoteAuthenticator authenticator) {
     super(host, program, programOptions, instanceId, serviceAnnouncer, TransactionControl.IMPLICIT);
 
     this.cConf = cConf;
@@ -108,6 +111,7 @@ public class ServiceHttpServer extends AbstractServiceHttpServer<HttpServiceHand
                                                preferencesFetcher);
     this.context = contextFactory.create(null, null);
     this.namespaceQueryAdmin = namespaceQueryAdmin;
+    this.authenticator = authenticator;
   }
 
   @Override
@@ -174,7 +178,7 @@ public class ServiceHttpServer extends AbstractServiceHttpServer<HttpServiceHand
                                                  txClient, pluginInstantiator, secureStore, secureStoreManager,
                                                  messagingService, artifactManager, metadataReader, metadataPublisher,
                                                  namespaceQueryAdmin, pluginFinder, fieldLineageWriter,
-                                                 transactionRunner, preferencesFetcher);
+                                                 transactionRunner, preferencesFetcher, authenticator);
       }
       return new BasicHttpServiceContext(program, programOptions, cConf, spec, instanceId, instanceCount,
                                          metricsCollectionService, datasetFramework, discoveryServiceClient,

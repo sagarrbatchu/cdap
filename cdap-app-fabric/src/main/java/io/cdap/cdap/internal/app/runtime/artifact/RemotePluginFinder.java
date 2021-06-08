@@ -33,6 +33,7 @@ import io.cdap.cdap.common.ServiceUnavailableException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.common.io.Locations;
 import io.cdap.cdap.common.service.Retries;
@@ -84,13 +85,14 @@ public class RemotePluginFinder implements PluginFinder, ArtifactFinder {
   @Inject
   RemotePluginFinder(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient,
                      AuthenticationContext authenticationContext,
-                     LocationFactory locationFactory) {
+                     LocationFactory locationFactory, RemoteAuthenticator authenticator) {
     this.remoteClient = new RemoteClient(discoveryServiceClient, Constants.Service.APP_FABRIC_HTTP,
                                          new DefaultHttpRequestConfig(false),
-                                         String.format("%s", Constants.Gateway.API_VERSION_3));
+                                         String.format("%s", Constants.Gateway.API_VERSION_3), authenticator);
     this.remoteClientInternal = new RemoteClient(discoveryServiceClient, Constants.Service.APP_FABRIC_HTTP,
                                                  new DefaultHttpRequestConfig(false),
-                                                 String.format("%s", Constants.Gateway.INTERNAL_API_VERSION_3));
+                                                 String.format("%s", Constants.Gateway.INTERNAL_API_VERSION_3),
+                                                 authenticator);
     this.authorizationEnabled = cConf.getBoolean(Constants.Security.Authorization.ENABLED);
     this.authenticationContext = authenticationContext;
     this.locationFactory = locationFactory;

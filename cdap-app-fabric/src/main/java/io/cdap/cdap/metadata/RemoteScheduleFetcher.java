@@ -25,6 +25,7 @@ import io.cdap.cdap.common.NotFoundException;
 import io.cdap.cdap.common.ProgramNotFoundException;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.internal.app.runtime.schedule.ScheduleNotFoundException;
 import io.cdap.cdap.internal.app.runtime.schedule.trigger.SatisfiableTrigger;
@@ -58,10 +59,10 @@ public class RemoteScheduleFetcher implements ScheduleFetcher {
   private final RemoteClient remoteClient;
 
   @Inject
-  public RemoteScheduleFetcher(DiscoveryServiceClient discoveryClient) {
+  public RemoteScheduleFetcher(DiscoveryServiceClient discoveryClient, RemoteAuthenticator authenticator) {
     this.remoteClient = new RemoteClient(
       discoveryClient, Constants.Service.APP_FABRIC_HTTP,
-      new DefaultHttpRequestConfig(false), Constants.Gateway.API_VERSION_3);
+      new DefaultHttpRequestConfig(false), Constants.Gateway.API_VERSION_3, authenticator);
   }
 
   /**

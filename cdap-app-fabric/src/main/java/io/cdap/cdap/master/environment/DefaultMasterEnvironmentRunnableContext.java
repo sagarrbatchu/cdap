@@ -18,6 +18,7 @@ package io.cdap.cdap.master.environment;
 
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.master.spi.environment.MasterEnvironmentRunnableContext;
 import org.apache.twill.discovery.DiscoveryServiceClient;
@@ -35,11 +36,11 @@ public class DefaultMasterEnvironmentRunnableContext implements MasterEnvironmen
   private final RemoteClient remoteClient;
 
   public DefaultMasterEnvironmentRunnableContext(DiscoveryServiceClient discoveryServiceClient,
-                                                 LocationFactory locationFactory) {
+                                                 LocationFactory locationFactory, RemoteAuthenticator authenticator) {
     this.discoveryServiceClient = discoveryServiceClient;
     this.locationFactory = locationFactory;
     this.remoteClient = new RemoteClient(discoveryServiceClient, Constants.Service.APP_FABRIC_HTTP,
-                                         new DefaultHttpRequestConfig(false), "");
+                                         new DefaultHttpRequestConfig(false), "", authenticator);
   }
 
   @Override

@@ -51,9 +51,10 @@ public class RemoteOpsClient {
   private final RemoteClient remoteClient;
 
   protected RemoteOpsClient(final DiscoveryServiceClient discoveryClient,
-                            final String discoverableServiceName) {
+                            final String discoverableServiceName, final RemoteAuthenticator authenticator) {
     this.remoteClient = new RemoteClient(discoveryClient, discoverableServiceName,
-                                         new DefaultHttpRequestConfig(false), "/v1/execute/");
+                                         new DefaultHttpRequestConfig(false), "/v1/execute/",
+                                         authenticator);
   }
 
   protected HttpResponse executeRequest(String methodName, Object... arguments) throws UnauthorizedException {

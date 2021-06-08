@@ -100,20 +100,21 @@ public class RemoteClient {
     HttpRequest httpRequest = request;
     URL rewrittenURL = rewriteURL(request.getURL());
 
-      // Add Authorization header and use a rewritten URL if needed
-      RemoteAuthenticator authenticator = getAuthenticator();
-      if (authenticator != null || !rewrittenURL.equals(request.getURL())) {
-        Multimap<String, String> headers = request.getHeaders();
-        if (authenticator != null) {
-          headers = headers == null ? HashMultimap.create() : HashMultimap.create(headers);
-          if (headers.keySet().stream().noneMatch(HttpHeaders.AUTHORIZATION::equalsIgnoreCase)) {
-            headers.put(HttpHeaders.AUTHORIZATION,
-                        String.format("%s %s", authenticator.getType(), authenticator.getCredentials()));
-          }
+    // Add Authorization header and use a rewritten URL if needed
+    RemoteAuthenticator authenticator = getAuthenticator();
+    if (authenticator != null || !rewrittenURL.equals(request.getURL())) {
+      Multimap<String, String> headers = request.getHeaders();
+      if (authenticator != null) {
+        headers = headers == null ? HashMultimap.create() : HashMultimap.create(headers);
+        if (authenticator.hasCredential() && headers.keySet().stream()
+          .noneMatch(HttpHeaders.AUTHORIZATION::equalsIgnoreCase)) {
+          headers.put(HttpHeaders.AUTHORIZATION,
+                      String.format("%s %s", authenticator.getType(), authenticator.getCredentials()));
         }
         httpRequest = new HttpRequest(request.getMethod(), rewrittenURL, headers,
                                       request.getBody(), request.getBodyLength());
       }
+    }
 
     try {
       HttpResponse response = HttpRequests.execute(httpRequest, httpRequestConfig);
@@ -145,7 +146,7 @@ public class RemoteClient {
     urlConn.setReadTimeout(httpRequestConfig.getReadTimeout());
     urlConn.setDoInput(true);
     RemoteAuthenticator authenticator = getAuthenticator();
-    if (authenticator != null) {
+    if (authenticator != null && authenticator.hasCredential()) {
       urlConn.setRequestProperty(HttpHeaders.AUTHORIZATION,
                                  String.format("%s %s", authenticator.getType(), authenticator.getCredentials()));
     }

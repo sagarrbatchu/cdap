@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
 import io.cdap.cdap.common.conf.Constants;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteOpsClient;
 import io.cdap.cdap.internal.guava.reflect.TypeToken;
 import io.cdap.cdap.proto.codec.EntityIdTypeAdapter;
@@ -52,8 +53,8 @@ public class RemotePermissionManager extends RemoteOpsClient implements Permissi
   private static final Type SET_PRIVILEGES_TYPE = new TypeToken<Set<Privilege>>() { }.getType();
 
   @Inject
-  RemotePermissionManager(DiscoveryServiceClient discoveryClient) {
-    super(discoveryClient, Constants.Service.APP_FABRIC_HTTP);
+  RemotePermissionManager(DiscoveryServiceClient discoveryClient, RemoteAuthenticator authenticator) {
+    super(discoveryClient, Constants.Service.APP_FABRIC_HTTP, authenticator);
   }
 
   @Override

@@ -63,7 +63,8 @@ public class DefaultMasterEnvironmentRunnableContextTest {
   public static void setup() throws Exception {
     DiscoveryService discoveryService = new InMemoryDiscoveryService();
     LocationFactory locationFactory = new LocalLocationFactory(TMP_FOLDER.newFolder());
-    context = new DefaultMasterEnvironmentRunnableContext((DiscoveryServiceClient) discoveryService, locationFactory);
+    context = new DefaultMasterEnvironmentRunnableContext((DiscoveryServiceClient) discoveryService, locationFactory,
+                                                          null);
 
     httpService = NettyHttpService.builder(Constants.Service.APP_FABRIC_HTTP)
       .setHttpHandlers(new MockHttpHandler())

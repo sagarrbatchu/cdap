@@ -24,10 +24,10 @@ import com.google.inject.assistedinject.Assisted;
 import io.cdap.cdap.api.artifact.ArtifactInfo;
 import io.cdap.cdap.api.artifact.ArtifactScope;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.cdap.api.dataset.DatasetManagementException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.common.io.Locations;
 import io.cdap.cdap.common.service.Retries;
@@ -70,7 +70,8 @@ public final class RemoteArtifactManager extends AbstractArtifactManager {
   @Inject
   RemoteArtifactManager(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient,
                         LocationFactory locationFactory, AuthenticationContext authenticationContext,
-                        @Assisted NamespaceId namespaceId, @Assisted RetryStrategy retryStrategy) {
+                        @Assisted NamespaceId namespaceId, @Assisted RetryStrategy retryStrategy,
+                        RemoteAuthenticator authenticator) {
     super(cConf);
     this.locationFactory = locationFactory;
     this.authenticationContext = authenticationContext;
@@ -79,7 +80,8 @@ public final class RemoteArtifactManager extends AbstractArtifactManager {
     this.authorizationEnabled = cConf.getBoolean(Constants.Security.Authorization.ENABLED);
     this.remoteClientInternal = new RemoteClient(discoveryServiceClient, Constants.Service.APP_FABRIC_HTTP,
                                                  new DefaultHttpRequestConfig(false),
-                                                 String.format("%s", Constants.Gateway.INTERNAL_API_VERSION_3));
+                                                 String.format("%s", Constants.Gateway.INTERNAL_API_VERSION_3),
+                                                 authenticator);
   }
 
   /**

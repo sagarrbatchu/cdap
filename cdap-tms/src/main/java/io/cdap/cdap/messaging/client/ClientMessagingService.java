@@ -34,6 +34,7 @@ import io.cdap.cdap.common.ServiceUnavailableException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.messaging.MessageFetcher;
 import io.cdap.cdap.messaging.MessagingService;
@@ -105,14 +106,16 @@ public final class ClientMessagingService implements MessagingService {
   private final boolean compressPayload;
 
   @Inject
-  ClientMessagingService(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient) {
-    this(discoveryServiceClient, cConf.getBoolean(Constants.MessagingSystem.HTTP_COMPRESS_PAYLOAD));
+  ClientMessagingService(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient,
+                         RemoteAuthenticator authenticator) {
+    this(discoveryServiceClient, cConf.getBoolean(Constants.MessagingSystem.HTTP_COMPRESS_PAYLOAD), authenticator);
   }
 
   @VisibleForTesting
-  public ClientMessagingService(DiscoveryServiceClient discoveryServiceClient, boolean compressPayload) {
+  public ClientMessagingService(DiscoveryServiceClient discoveryServiceClient, boolean compressPayload,
+                                RemoteAuthenticator authenticator) {
     this.remoteClient = new RemoteClient(discoveryServiceClient, Constants.Service.MESSAGING_SERVICE,
-                                         HTTP_REQUEST_CONFIG, "/v1/namespaces/");
+                                         HTTP_REQUEST_CONFIG, "/v1/namespaces/", authenticator);
     this.compressPayload = compressPayload;
   }
 

@@ -28,6 +28,7 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.io.Codec;
 import io.cdap.cdap.common.lang.InstantiatorFactory;
 import io.cdap.cdap.security.auth.AccessToken;
@@ -43,6 +44,7 @@ import io.cdap.cdap.security.auth.TokenValidator;
 import io.cdap.cdap.security.auth.UserIdentity;
 import io.cdap.cdap.security.auth.UserIdentityCodec;
 import io.cdap.cdap.security.auth.UserIdentityExtractor;
+import io.cdap.cdap.security.auth.internal.InternalRemoteAuthenticator;
 import io.cdap.cdap.security.server.AuditLogHandler;
 import io.cdap.cdap.security.server.ExternalAuthenticationServer;
 import io.cdap.cdap.security.server.GrantAccessToken;
@@ -91,11 +93,13 @@ public abstract class SecurityModule extends PrivateModule {
     bind(UserIdentityExtractor.class).annotatedWith(Names.named(ProxyUserIdentityExtractor.NAME))
       .to(ProxyUserIdentityExtractor.class);
     bind(UserIdentityExtractor.class).toProvider(UserIdentityExtractorProvider.class).in(Scopes.SINGLETON);
+    bind(RemoteAuthenticator.class).to(InternalRemoteAuthenticator.class).in(Scopes.SINGLETON);
     expose(UserIdentityExtractor.class);
     expose(TokenValidator.class);
     expose(TokenManager.class);
     expose(ExternalAuthenticationServer.class);
     expose(new TypeLiteral<Codec<KeyIdentifier>>() { });
+    expose(RemoteAuthenticator.class);
   }
 
   private static final class AuthenticationHandlerProvider implements Provider<Handler> {

@@ -35,6 +35,7 @@ import io.cdap.cdap.api.dataset.module.DatasetDefinitionRegistry;
 import io.cdap.cdap.api.dataset.module.DatasetModule;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.io.Locations;
 import io.cdap.cdap.common.lang.ClassLoaders;
 import io.cdap.cdap.data2.datafabric.dataset.type.ConstantClassLoaderProvider;
@@ -87,12 +88,13 @@ public class RemoteDatasetFramework implements DatasetFramework {
   @Inject
   public RemoteDatasetFramework(final CConfiguration cConf, final DiscoveryServiceClient discoveryClient,
                                 DatasetDefinitionRegistryFactory registryFactory,
-                                final AuthenticationContext authenticationContext) {
+                                final AuthenticationContext authenticationContext,
+                                final RemoteAuthenticator authenticator) {
     this.cConf = cConf;
     this.clientCache = CacheBuilder.newBuilder().build(new CacheLoader<NamespaceId, DatasetServiceClient>() {
       @Override
       public DatasetServiceClient load(NamespaceId namespace) throws Exception {
-        return new DatasetServiceClient(discoveryClient, namespace, cConf, authenticationContext);
+        return new DatasetServiceClient(discoveryClient, namespace, cConf, authenticationContext, authenticator);
       }
     });
     this.registryFactory = registryFactory;

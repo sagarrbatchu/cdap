@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.metadata.elastic.ScopedNameOfKindTypeAdapter;
 import io.cdap.cdap.metadata.elastic.ScopedNameTypeAdapter;
@@ -57,10 +58,10 @@ public class DefaultMetadataServiceClient implements MetadataServiceClient {
   private final RemoteClient remoteClient;
 
   @Inject
-  public DefaultMetadataServiceClient(final DiscoveryServiceClient discoveryClient) {
+  public DefaultMetadataServiceClient(final DiscoveryServiceClient discoveryClient, RemoteAuthenticator authenticator) {
     this.remoteClient = new RemoteClient(discoveryClient, Constants.Service.METADATA_SERVICE,
                                          new DefaultHttpRequestConfig(false),
-                                         Constants.Gateway.API_VERSION_3);
+                                         Constants.Gateway.API_VERSION_3, authenticator);
   }
 
   @Override

@@ -26,6 +26,7 @@ import io.cdap.cdap.common.ConflictException;
 import io.cdap.cdap.common.HandlerException;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.http.DefaultHttpRequestConfig;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.internal.remote.RemoteClient;
 import io.cdap.cdap.proto.DatasetTypeMeta;
 import io.cdap.cdap.proto.id.DatasetId;
@@ -55,10 +56,12 @@ public class RemoteDatasetOpExecutor implements DatasetOpExecutor {
   private final AuthenticationContext authenticationContext;
 
   @Inject
-  public RemoteDatasetOpExecutor(DiscoveryServiceClient discoveryClient, AuthenticationContext authenticationContext) {
+  public RemoteDatasetOpExecutor(DiscoveryServiceClient discoveryClient, AuthenticationContext authenticationContext,
+                                 RemoteAuthenticator authenticator) {
     this.authenticationContext = authenticationContext;
     this.remoteClient = new RemoteClient(discoveryClient, Constants.Service.DATASET_EXECUTOR,
-                                         new DefaultHttpRequestConfig(false), Constants.Gateway.API_VERSION_3);
+                                         new DefaultHttpRequestConfig(false), Constants.Gateway.API_VERSION_3,
+                                         authenticator);
   }
 
   @Override

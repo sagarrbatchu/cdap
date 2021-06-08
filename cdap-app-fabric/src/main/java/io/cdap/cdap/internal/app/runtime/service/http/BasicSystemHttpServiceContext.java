@@ -32,6 +32,7 @@ import io.cdap.cdap.app.program.Program;
 import io.cdap.cdap.app.runtime.ProgramOptions;
 import io.cdap.cdap.common.NotFoundException;
 import io.cdap.cdap.common.conf.CConfiguration;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.namespace.NamespaceQueryAdmin;
 import io.cdap.cdap.data2.dataset2.DatasetFramework;
 import io.cdap.cdap.data2.metadata.writer.FieldLineageWriter;
@@ -86,7 +87,7 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
                                        MetadataReader metadataReader, MetadataPublisher metadataPublisher,
                                        NamespaceQueryAdmin namespaceQueryAdmin, PluginFinder pluginFinder,
                                        FieldLineageWriter fieldLineageWriter, TransactionRunner transactionRunner,
-                                       PreferencesFetcher preferencesFetcher) {
+                                       PreferencesFetcher preferencesFetcher, RemoteAuthenticator authenticator) {
     super(program, programOptions, cConf, spec, instanceId, instanceCount, metricsCollectionService, dsFramework,
           discoveryServiceClient, txClient, pluginInstantiator, secureStore, secureStoreManager, messagingService,
           artifactManager, metadataReader, metadataPublisher, namespaceQueryAdmin, pluginFinder, fieldLineageWriter);
@@ -94,7 +95,7 @@ public class BasicSystemHttpServiceContext extends BasicHttpServiceContext imple
     this.namespaceId = program.getId().getNamespaceId();
     this.transactionRunner = transactionRunner;
     this.preferencesFetcher = preferencesFetcher;
-    this.remoteTaskExecutor = new RemoteTaskExecutor(cConf, discoveryServiceClient);
+    this.remoteTaskExecutor = new RemoteTaskExecutor(cConf, discoveryServiceClient, authenticator);
   }
 
   @Override

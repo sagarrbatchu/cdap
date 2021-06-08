@@ -95,6 +95,12 @@ public abstract class RemoteAuthenticator {
   public abstract String getType() throws IOException;
 
   /**
+   * Checks whether this authenticator has a credential to use.
+   * @return Whether or not the authenticator has a credential to use.
+   */
+  public abstract boolean hasCredential() throws IOException;
+
+  /**
    * Returns the credentials for the authentication. It must be conformed to the requirement of the type returned by
    * {@link #getType()}.
    */

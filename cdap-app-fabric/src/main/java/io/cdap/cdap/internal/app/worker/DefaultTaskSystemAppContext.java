@@ -36,6 +36,7 @@ import io.cdap.cdap.common.namespace.NamespaceQueryAdmin;
 import io.cdap.cdap.common.service.Retries;
 import io.cdap.cdap.common.service.RetryStrategy;
 import io.cdap.cdap.common.service.ServiceDiscoverable;
+import io.cdap.cdap.common.utils.DirUtils;
 import io.cdap.cdap.data2.dataset2.DatasetFramework;
 import io.cdap.cdap.internal.app.DefaultPluginConfigurer;
 import io.cdap.cdap.internal.app.runtime.DefaultAdmin;
@@ -49,12 +50,16 @@ import io.cdap.cdap.proto.ProgramType;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.common.http.HttpRequestConfig;
 import org.apache.twill.discovery.DiscoveryServiceClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +69,8 @@ import javax.annotation.Nullable;
  * Default implementation for {@link io.cdap.cdap.api.service.worker.TaskSystemAppContext}
  */
 public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultTaskSystemAppContext.class);
 
   private final Admin admin;
   private final PreferencesFetcher preferencesFetcher;
@@ -75,6 +82,7 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
   private final SecureStore secureStore;
   private final String artifactNameSpace;
   private final RetryStrategy retryStrategy;
+  private List<Closeable> closeables;
 
   DefaultTaskSystemAppContext(CConfiguration cConf, DatasetFramework dsFramework,
                               SecureStoreManager secureStoreManager, MessagingService messagingService,
@@ -95,6 +103,7 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
     this.artifactId = artifactId;
     this.discoveryServiceClient = discoveryServiceClient;
     this.secureStore = secureStore;
+    this.closeables = new ArrayList<>();
   }
 
   @Override
@@ -115,12 +124,15 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
   public PluginConfigurer createPluginConfigurer(String namespace) throws IOException {
     File tmpDir = new File(cConf.get(Constants.CFG_LOCAL_DATA_DIR),
                            cConf.get(Constants.AppFabric.TEMP_DIR)).getAbsoluteFile();
-    //Create the same directory every time for caching
-    File pluginsDir = new File(tmpDir, "plugins").getAbsoluteFile();
-    if (!pluginsDir.exists()) {
-      Files.createDirectory(pluginsDir.toPath());
-    }
+    File pluginsDir = Files.createTempDirectory(tmpDir.toPath(), "plugins").toFile();
     PluginInstantiator instantiator = new PluginInstantiator(cConf, artifactClassLoader, pluginsDir);
+    closeables.add(() -> {
+      try {
+        instantiator.close();
+      } finally {
+        DirUtils.deleteDirectoryContents(pluginsDir, true);
+      }
+    });
     io.cdap.cdap.proto.id.ArtifactId protoArtifactId =
       new io.cdap.cdap.proto.id.ArtifactId(artifactNameSpace, artifactId.getName(),
                                            artifactId.getVersion().getVersion());
@@ -139,6 +151,17 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
       evaluated.put(key, macroParser.parse(val));
     }
     return evaluated;
+  }
+
+  @Override
+  public void releaseResources() {
+    for (Closeable closeable : closeables) {
+      try {
+        closeable.close();
+      } catch (IOException e) {
+        LOG.warn("Error while cleaning up resources.", e);
+      }
+    }
   }
 
   @Override

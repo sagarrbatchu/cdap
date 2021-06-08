@@ -100,6 +100,7 @@ public class SystemAppTask implements RunnableTask {
         withTaskSystemAppContext(taskSystemAppContext).build();
       runnableTask.run(runnableTaskContext);
       context.writeResult(runnableTaskContext.getResult());
+      taskSystemAppContext.releaseResources();
     }
   }
 

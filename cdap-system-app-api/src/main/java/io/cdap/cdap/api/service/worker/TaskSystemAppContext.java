@@ -70,4 +70,9 @@ public interface TaskSystemAppContext extends ServiceDiscoverer, SecureStore {
                                      MacroEvaluator evaluator,
                                      MacroParserOptions options) throws InvalidMacroException;
 
+  /**
+   * Release all the resources created for the context
+   */
+  void releaseResources();
+
 }

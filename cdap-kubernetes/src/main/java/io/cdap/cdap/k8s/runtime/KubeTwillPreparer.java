@@ -114,6 +114,10 @@ import java.util.stream.Collectors;
  * <p>
  * Most of these operations are no-ops as many of these methods and pretty closely coupled to the Hadoop implementation
  * and have no analogy in Kubernetes.
+ * <p>
+ * If {@link TwillSpecification} contains multiple {@link TwillRunnable}, the first runnable will be treated as the
+ * main container, and the rest will be treated as sidecar containers.
+ * TODO This assumption needs to be changed by using {@ TwillSpecification.PlacementPolicy}.
  */
 class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
 

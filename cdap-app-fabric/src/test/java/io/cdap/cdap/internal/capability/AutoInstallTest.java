@@ -70,7 +70,7 @@ public class AutoInstallTest {
     ArtifactRepository artifactRepository = PowerMockito.mock(ArtifactRepository.class);
     CapabilityApplier capabilityApplier = new CapabilityApplier(null, null,
                                                                 null, null, null,
-                                                                artifactRepository, null, cConf);
+                                                                artifactRepository, null, cConf, null);
     CapabilityApplier ca = Mockito.spy(capabilityApplier);
     PowerMockito.mockStatic(HttpClients.class);
     PowerMockito.mockStatic(Files.class);

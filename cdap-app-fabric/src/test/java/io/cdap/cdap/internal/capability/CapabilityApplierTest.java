@@ -68,7 +68,7 @@ import java.util.UUID;
     DiscoveryServiceClient client = getInjector().getInstance(DiscoveryServiceClient.class);
     capabilityApplier = new CapabilityApplier(null, null,
                                               null, null, null,
-                                              null, client, cConfiguration);
+                                              null, client, cConfiguration, null);
   }
 
   @AfterClass

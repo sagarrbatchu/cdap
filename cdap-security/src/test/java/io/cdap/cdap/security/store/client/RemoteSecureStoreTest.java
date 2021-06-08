@@ -81,7 +81,7 @@ public class RemoteSecureStoreTest {
     discoveryService.register(URIScheme.HTTPS.createDiscoverable(Constants.Service.SECURE_STORE_SERVICE,
                                                          httpService.getBindAddress()));
 
-    remoteSecureStore = new RemoteSecureStore(discoveryService);
+    remoteSecureStore = new RemoteSecureStore(discoveryService, null);
   }
 
   @AfterClass

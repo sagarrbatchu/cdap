@@ -33,6 +33,7 @@ import io.cdap.cdap.common.InvalidArtifactException;
 import io.cdap.cdap.common.NotFoundException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.common.namespace.NamespaceAdmin;
 import io.cdap.cdap.common.service.Retries;
 import io.cdap.cdap.common.service.RetryStrategies;
@@ -114,13 +115,13 @@ class CapabilityApplier {
                     ApplicationLifecycleService applicationLifecycleService, NamespaceAdmin namespaceAdmin,
                     ProgramLifecycleService programLifecycleService, CapabilityStatusStore capabilityStatusStore,
                     ArtifactRepository artifactRepository, DiscoveryServiceClient discoveryClient,
-                    CConfiguration cConf) {
+                    CConfiguration cConf, RemoteAuthenticator authenticator) {
     this.systemProgramManagementService = systemProgramManagementService;
     this.applicationLifecycleService = applicationLifecycleService;
     this.programLifecycleService = programLifecycleService;
     this.capabilityStatusStore = capabilityStatusStore;
     this.namespaceAdmin = namespaceAdmin;
-    this.metadataSearchClient = new MetadataSearchClient(discoveryClient);
+    this.metadataSearchClient = new MetadataSearchClient(discoveryClient, authenticator);
     this.artifactRepository = artifactRepository;
     this.tmpDir = new File(cConf.get(Constants.CFG_LOCAL_DATA_DIR),
                            cConf.get(Constants.AppFabric.TEMP_DIR)).getAbsoluteFile();

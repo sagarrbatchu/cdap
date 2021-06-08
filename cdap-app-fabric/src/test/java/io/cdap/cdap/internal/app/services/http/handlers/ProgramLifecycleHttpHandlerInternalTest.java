@@ -49,7 +49,7 @@ public class ProgramLifecycleHttpHandlerInternalTest extends AppFabricTestBase {
   @BeforeClass
   public static void init() {
     programRunRecordFetcher = new RemoteProgramRunRecordFetcher(
-      getInjector().getInstance(DiscoveryServiceClient.class));
+      getInjector().getInstance(DiscoveryServiceClient.class), null);
   }
 
   @Test

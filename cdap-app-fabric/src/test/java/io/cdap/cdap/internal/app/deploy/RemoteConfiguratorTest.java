@@ -140,7 +140,7 @@ public class RemoteConfiguratorTest {
                                                    new ApplicationClass(AllProgramsApp.class.getName(), "", null),
                                                    null, null, null);
 
-    Configurator configurator = new RemoteConfigurator(cConf, discoveryService, info);
+    Configurator configurator = new RemoteConfigurator(cConf, discoveryService, info, null);
 
     // Extract response from the configurator.
     ListenableFuture<ConfigResponse> result = configurator.config();
@@ -172,7 +172,7 @@ public class RemoteConfiguratorTest {
                                                    new ApplicationClass(AllProgramsApp.class.getName(), "", null),
                                                    null, null, null);
 
-    Configurator configurator = new RemoteConfigurator(cConf, discoveryService, info);
+    Configurator configurator = new RemoteConfigurator(cConf, discoveryService, info, null);
 
     // Expect the future.get would throw an exception
     configurator.config().get(10, TimeUnit.SECONDS);
@@ -191,7 +191,7 @@ public class RemoteConfiguratorTest {
                                                    new ApplicationClass(ConfigTestApp.class.getName(), "", null),
                                                    "BadApp", null, GSON.toJson("invalid"));
 
-    Configurator configurator = new RemoteConfigurator(cConf, discoveryService, info);
+    Configurator configurator = new RemoteConfigurator(cConf, discoveryService, info, null);
 
     // Expect the future.get would throw an exception
     configurator.config().get(10, TimeUnit.SECONDS);

@@ -27,6 +27,7 @@ import io.cdap.cdap.api.service.worker.RunnableTaskRequest;
 import io.cdap.cdap.app.deploy.ConfigResponse;
 import io.cdap.cdap.app.deploy.Configurator;
 import io.cdap.cdap.common.conf.CConfiguration;
+import io.cdap.cdap.common.internal.remote.RemoteAuthenticator;
 import io.cdap.cdap.internal.app.RemoteTaskExecutor;
 import io.cdap.cdap.internal.app.deploy.pipeline.AppDeploymentInfo;
 import io.cdap.cdap.internal.app.runtime.artifact.ApplicationClassCodec;
@@ -53,9 +54,9 @@ public class RemoteConfigurator implements Configurator {
 
   @Inject
   public RemoteConfigurator(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient,
-                            @Assisted AppDeploymentInfo deploymentInfo) {
+                            @Assisted AppDeploymentInfo deploymentInfo, RemoteAuthenticator authenticator) {
     this.deploymentInfo = deploymentInfo;
-    this.remoteTaskExecutor = new RemoteTaskExecutor(cConf, discoveryServiceClient);
+    this.remoteTaskExecutor = new RemoteTaskExecutor(cConf, discoveryServiceClient, authenticator);
   }
 
   @Override

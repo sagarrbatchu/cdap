@@ -115,7 +115,8 @@ public class RemoteLogAppender extends LogAppender {
     private final DatumWriter<List<ByteBuffer>> datumWriter;
     private final RemoteClient remoteClient;
 
-    private RemoteLogPublisher(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient, RemoteAuthenticator authenticator) {
+    private RemoteLogPublisher(CConfiguration cConf, DiscoveryServiceClient discoveryServiceClient,
+                               RemoteAuthenticator authenticator) {
       super(cConf.getInt(Constants.Logging.APPENDER_QUEUE_SIZE, 512),
             RetryStrategies.fromConfiguration(cConf, "system.log.process."));
       this.numPartitions = cConf.getInt(Constants.Logging.NUM_PARTITIONS);

@@ -118,7 +118,7 @@ public class MessagingHttpServiceTest {
 
     httpService = injector.getInstance(MessagingHttpService.class);
     httpService.startAndWait();
-    client = new ClientMessagingService(injector.getInstance(DiscoveryServiceClient.class), compressPayload);
+    client = new ClientMessagingService(injector.getInstance(DiscoveryServiceClient.class), compressPayload, null);
   }
 
   @After

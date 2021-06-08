@@ -145,7 +145,7 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
     MetricsCollectionService metricsCollectionService = injector.getInstance(MetricsCollectionService.class);
     AuthenticationContext authenticationContext = injector.getInstance(AuthenticationContext.class);
 
-    framework = new RemoteDatasetFramework(cConf, discoveryServiceClient, registryFactory, authenticationContext);
+    framework = new RemoteDatasetFramework(cConf, discoveryServiceClient, registryFactory, authenticationContext, null);
     SystemDatasetInstantiatorFactory datasetInstantiatorFactory =
       new SystemDatasetInstantiatorFactory(locationFactory, framework, cConf);
 
@@ -171,7 +171,7 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
                                                                          authenticationContext);
 
 
-    DatasetOpExecutor opExecutor = new RemoteDatasetOpExecutor(discoveryServiceClient, authenticationContext);
+    DatasetOpExecutor opExecutor = new RemoteDatasetOpExecutor(discoveryServiceClient, authenticationContext, null);
     DatasetInstanceService instanceService = new DatasetInstanceService(typeService, noAuthTypeService,
                                                                         instanceManager, opExecutor,
                                                                         exploreFacade, namespaceQueryAdmin, ownerAdmin,

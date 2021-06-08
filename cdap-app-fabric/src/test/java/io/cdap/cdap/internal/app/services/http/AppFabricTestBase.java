@@ -278,7 +278,7 @@ public abstract class AppFabricTestBase {
     locationFactory = getInjector().getInstance(LocationFactory.class);
     datasetClient = new DatasetClient(getClientConfig(discoveryClient, Constants.Service.DATASET_MANAGER));
     metadataClient = new MetadataClient(getClientConfig(discoveryClient, Constants.Service.METADATA_SERVICE));
-    metadataServiceClient = new DefaultMetadataServiceClient(discoveryClient);
+    metadataServiceClient = new DefaultMetadataServiceClient(discoveryClient, null);
     metricStore = injector.getInstance(MetricStore.class);
 
     Scheduler programScheduler = injector.getInstance(Scheduler.class);

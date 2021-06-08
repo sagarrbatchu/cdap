@@ -23,7 +23,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.cdap.cdap.api.metrics.MetricsCollectionService;
-import io.cdap.cdap.api.security.AccessException;
 import io.cdap.cdap.app.guice.RuntimeServerModule;
 import io.cdap.cdap.common.app.RunIds;
 import io.cdap.cdap.common.conf.CConfiguration;
@@ -284,6 +283,11 @@ public class RuntimeServiceRoutingTest {
     @Override
     public String getType() {
       return "test";
+    }
+
+    @Override
+    public boolean hasCredential() throws IOException {
+      return true;
     }
 
     @Override

@@ -103,7 +103,7 @@ public class LogBufferHandlerTest {
   private RemoteLogAppender getRemoteAppender(CConfiguration cConf, NettyHttpService httpService) {
     InMemoryDiscoveryService discoveryService = new InMemoryDiscoveryService();
     discoveryService.register(new Discoverable(Constants.Service.LOG_BUFFER_SERVICE, httpService.getBindAddress()));
-    return new RemoteLogAppender(cConf, discoveryService);
+    return new RemoteLogAppender(cConf, discoveryService, null);
   }
 
   private LogBufferProcessorPipeline getLogPipeline(LoggerContext loggerContext) {

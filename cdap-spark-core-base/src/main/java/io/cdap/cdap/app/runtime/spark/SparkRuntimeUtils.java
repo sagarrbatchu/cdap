@@ -34,6 +34,7 @@ import io.cdap.cdap.common.service.RetryStrategies;
 import io.cdap.cdap.common.utils.DirUtils;
 import io.cdap.cdap.internal.app.runtime.monitor.RuntimeClient;
 import io.cdap.cdap.proto.id.ProgramRunId;
+import io.cdap.cdap.security.auth.internal.InternalRemoteAuthenticator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.scheduler.EventLoggingListener;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
@@ -383,7 +384,9 @@ public final class SparkRuntimeUtils {
     }
 
     RuntimeClient runtimeClient = new RuntimeClient(runtimeContext.getCConfiguration(),
-                                                    runtimeContext.getDiscoveryServiceClient());
+                                                    runtimeContext.getDiscoveryServiceClient(),
+                                                    new InternalRemoteAuthenticator(runtimeContext
+                                                                                      .getAuthenticationContext()));
     Retries.runWithRetries(() -> runtimeClient.uploadSparkEventLogs(programRunId, eventFile),
                            RetryStrategies.fromConfiguration(runtimeContext.getCConfiguration(), "spark."));
     LOG.debug("Uploaded event logs file {} for program run {}", eventFile, programRunId);

@@ -98,10 +98,10 @@ public class RemoteValidationTask implements RunnableTask {
                                              TaskSystemAppContext systemAppContext) {
     Map<String, MacroEvaluator> evaluators = ImmutableMap.of(
       SecureStoreMacroEvaluator.FUNCTION_NAME,
-      new SecureStoreMacroEvaluator(namespace, systemAppContext.getSecureStore()),
-      OAuthMacroEvaluator.FUNCTION_NAME, new OAuthMacroEvaluator(systemAppContext.getServiceDiscoverer()),
+      new SecureStoreMacroEvaluator(namespace, systemAppContext),
+      OAuthMacroEvaluator.FUNCTION_NAME, new OAuthMacroEvaluator(systemAppContext),
       ConnectionMacroEvaluator.FUNCTION_NAME,
-      new ConnectionMacroEvaluator(namespace, systemAppContext.getServiceDiscoverer())
+      new ConnectionMacroEvaluator(namespace, systemAppContext)
     );
     MacroEvaluator macroEvaluator = new DefaultMacroEvaluator(new BasicArguments(programArgs), evaluators);
     MacroParserOptions macroParserOptions = MacroParserOptions.builder()

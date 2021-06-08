@@ -17,9 +17,7 @@
 package io.cdap.cdap.internal.app.worker;
 
 import io.cdap.cdap.api.Admin;
-import io.cdap.cdap.api.ServiceDiscoverer;
 import io.cdap.cdap.api.artifact.ArtifactId;
-import io.cdap.cdap.api.artifact.ArtifactManager;
 import io.cdap.cdap.api.macro.InvalidMacroException;
 import io.cdap.cdap.api.macro.MacroEvaluator;
 import io.cdap.cdap.api.macro.MacroParserOptions;
@@ -41,7 +39,6 @@ import io.cdap.cdap.common.service.ServiceDiscoverable;
 import io.cdap.cdap.data2.dataset2.DatasetFramework;
 import io.cdap.cdap.internal.app.DefaultPluginConfigurer;
 import io.cdap.cdap.internal.app.runtime.DefaultAdmin;
-import io.cdap.cdap.internal.app.runtime.artifact.ArtifactManagerFactory;
 import io.cdap.cdap.internal.app.runtime.artifact.PluginFinder;
 import io.cdap.cdap.internal.app.runtime.plugin.MacroParser;
 import io.cdap.cdap.internal.app.runtime.plugin.PluginInstantiator;
@@ -66,8 +63,7 @@ import javax.annotation.Nullable;
 /**
  * Default implementation for {@link io.cdap.cdap.api.service.worker.TaskSystemAppContext}
  */
-public class DefaultTaskSystemAppContext implements TaskSystemAppContext, ServiceDiscoverer,
-  SecureStore {
+public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
 
   private final Admin admin;
   private final PreferencesFetcher preferencesFetcher;
@@ -78,16 +74,13 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext, Servic
   private final DiscoveryServiceClient discoveryServiceClient;
   private final SecureStore secureStore;
   private final String artifactNameSpace;
-  private final ArtifactManager artifactManager;
   private final RetryStrategy retryStrategy;
-  private final String serviceName;
 
   DefaultTaskSystemAppContext(CConfiguration cConf, DatasetFramework dsFramework,
                               SecureStoreManager secureStoreManager, MessagingService messagingService,
                               RetryStrategy retryStrategy, NamespaceQueryAdmin namespaceQueryAdmin,
                               PreferencesFetcher preferencesFetcher, PluginFinder pluginFinder,
                               DiscoveryServiceClient discoveryServiceClient, SecureStore secureStore,
-                              ArtifactManagerFactory artifactManagerFactory, String serviceName,
                               String artifactNameSpace, ArtifactId artifactId, ClassLoader artifactClassLoader) {
     this.cConf = cConf;
     this.artifactNameSpace = artifactNameSpace;
@@ -101,9 +94,7 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext, Servic
     this.pluginFinder = pluginFinder;
     this.artifactId = artifactId;
     this.discoveryServiceClient = discoveryServiceClient;
-    this.artifactManager = artifactManagerFactory.create(namespaceId, retryStrategy);
     this.secureStore = secureStore;
-    this.serviceName = serviceName;
   }
 
   @Override
@@ -148,26 +139,6 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext, Servic
       evaluated.put(key, macroParser.parse(val));
     }
     return evaluated;
-  }
-
-  @Override
-  public ServiceDiscoverer getServiceDiscoverer() {
-    return this;
-  }
-
-  @Override
-  public SecureStore getSecureStore() {
-    return this;
-  }
-
-  @Override
-  public ArtifactManager getArtifactManager() {
-    return artifactManager;
-  }
-
-  @Override
-  public String getServiceName() {
-    return serviceName;
   }
 
   @Override

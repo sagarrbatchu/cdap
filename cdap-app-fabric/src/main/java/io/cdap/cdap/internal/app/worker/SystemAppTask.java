@@ -39,7 +39,6 @@ import io.cdap.cdap.common.service.RetryStrategies;
 import io.cdap.cdap.common.service.RetryStrategy;
 import io.cdap.cdap.data2.dataset2.DatasetFramework;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactDetail;
-import io.cdap.cdap.internal.app.runtime.artifact.ArtifactManagerFactory;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactRepository;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactRepositoryReader;
 import io.cdap.cdap.internal.app.runtime.artifact.PluginFinder;
@@ -115,12 +114,10 @@ public class SystemAppTask implements RunnableTask {
     RetryStrategy retryStrategy = RetryStrategies.fromConfiguration(cConf, Constants.Service.TASK_WORKER + ".");
     DiscoveryServiceClient discoveryServiceClient = injector.getInstance(DiscoveryServiceClient.class);
     SecureStore secureStore = injector.getInstance(SecureStore.class);
-    ArtifactManagerFactory artifactManagerFactory = injector.getInstance(ArtifactManagerFactory.class);
     return
       new DefaultTaskSystemAppContext(cConf, dsFramework, secureStoreManager, messagingService,
-                                      retryStrategy, namespaceQueryAdmin, preferencesFetcher,
-                                      pluginFinder, discoveryServiceClient, secureStore, artifactManagerFactory,
-                                      Constants.Service.TASK_WORKER, systemAppNamespace, artifactId,
+                                      retryStrategy, namespaceQueryAdmin, preferencesFetcher, pluginFinder,
+                                      discoveryServiceClient, secureStore, systemAppNamespace, artifactId,
                                       artifactClassLoader);
   }
 

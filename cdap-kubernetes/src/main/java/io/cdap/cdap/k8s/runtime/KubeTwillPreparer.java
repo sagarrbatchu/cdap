@@ -167,6 +167,14 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
     this.extraLabels = extraLabels;
   }
 
+  /**
+   * Currently, KubeTwillPreparer only supports one StatefulRunnables for a Twill application.
+   * Therefore, the provided {@link StatefulDisk} applies to all the containers that correspond to Twill runnables.
+   * @param runnableName name of the {@link TwillRunnable}
+   * @param orderedStart {@code true} to start replicas one by one; {@code false} to start replicas in parallel
+   * @param disks
+   * @return
+   */
   @Override
   public KubeTwillPreparer withStatefulRunnable(String runnableName,
                                                 boolean orderedStart, StatefulDisk... disks) {
@@ -706,7 +714,8 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
     // Setup the container environment. Inherit everything from the current pod.
     Map<String, String> initContainerEnvirons = podInfo.getContainerEnvironments().stream()
       .collect(Collectors.toMap(V1EnvVar::getName, V1EnvVar::getValue));
-    // Add all environments for the first runnable which is considered the main runnable
+    // Add all environments of the first runnable which is considered the main runnable
+    // to the init container.
     initContainerEnvirons.putAll(environments.get(runtimeSpecs.get(0).getName()));
     V1PodSpecBuilder podSpecBuilder = new V1PodSpecBuilder();
     if (schedulerQueue != null) {

@@ -703,15 +703,15 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
     volumeMounts.add(new V1VolumeMount().name("workdir").mountPath(workDir));
     volumeMounts.addAll(Arrays.asList(extraMounts));
 
+    // Setup the container environment. Inherit everything from the current pod.
+    Map<String, String> initContainerEnvirons = podInfo.getContainerEnvironments().stream()
+      .collect(Collectors.toMap(V1EnvVar::getName, V1EnvVar::getValue));
+    // Add all environments for the first runnable which is considered the main runnable
+    initContainerEnvirons.putAll(environments.get(runtimeSpecs.get(0).getName()));
     V1PodSpecBuilder podSpecBuilder = new V1PodSpecBuilder();
     if (schedulerQueue != null) {
       podSpecBuilder = podSpecBuilder.withPriorityClassName(schedulerQueue);
     }
-
-    // Setup the container environment. Inherit everything from the current pod.
-    Map<String, String> environs = podInfo.getContainerEnvironments().stream()
-      .collect(Collectors.toMap(V1EnvVar::getName, V1EnvVar::getValue));
-
     return podSpecBuilder
       .withServiceAccountName(podInfo.getServiceAccountName())
       .withRuntimeClassName(podInfo.getRuntimeClassName())
@@ -719,7 +719,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
       .addToVolumes(podInfoVolume,
                     new V1Volume().name("workdir").emptyDir(new V1EmptyDirVolumeSource()))
       .withInitContainers(createContainer("file-localizer", podInfo.getContainerImage(), workDir,
-                                          resourceRequirements, volumeMounts, environs, FileLocalizer.class,
+                                          resourceRequirements, volumeMounts, initContainerEnvirons, FileLocalizer.class,
                                           runtimeConfigLocation.toURI().toString(),
                                           runtimeSpecs.iterator().next().getName()))
       .withContainers(createContainers(runtimeSpecs, workDir, volumeMounts))

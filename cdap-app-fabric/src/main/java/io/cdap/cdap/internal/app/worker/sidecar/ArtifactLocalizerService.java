@@ -25,7 +25,6 @@ import io.cdap.cdap.common.conf.SConfiguration;
 import io.cdap.cdap.common.discovery.ResolvingDiscoverable;
 import io.cdap.cdap.common.discovery.URIScheme;
 import io.cdap.cdap.common.http.CommonNettyHttpServiceBuilder;
-import io.cdap.cdap.common.security.HttpsEnabler;
 import io.cdap.http.NettyHttpService;
 import org.apache.twill.common.Cancellable;
 import org.apache.twill.discovery.DiscoveryService;
@@ -41,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class ArtifactLocalizerService extends AbstractIdleService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ArtifactLocalizerService.class);
+  private static final String BIND_ADDRESS = "127.0.0.1";
 
   private final CConfiguration cConf;
   private final SConfiguration sConf;
@@ -58,7 +58,7 @@ public class ArtifactLocalizerService extends AbstractIdleService {
     this.discoveryService = discoveryService;
 
     NettyHttpService.Builder builder = new CommonNettyHttpServiceBuilder(cConf, Constants.Service.TASK_WORKER)
-      .setHost("127.0.0.1")
+      .setHost(BIND_ADDRESS)
       .setPort(cConf.getInt(Constants.ArtifactLocalizer.PORT))
       .setBossThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.BOSS_THREADS))
       .setWorkerThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.WORKER_THREADS))
@@ -80,7 +80,9 @@ public class ArtifactLocalizerService extends AbstractIdleService {
   @Override
   protected void shutDown() throws Exception {
     LOG.info("Shutting down ArtifactLocalizerService");
-    cancelDiscovery.cancel();
+    if (cancelDiscovery != null) {
+      cancelDiscovery.cancel();
+    }
     httpService.stop(5, 5, TimeUnit.SECONDS);
     LOG.debug("Shutting down ArtifactLocalizerService has completed");
   }

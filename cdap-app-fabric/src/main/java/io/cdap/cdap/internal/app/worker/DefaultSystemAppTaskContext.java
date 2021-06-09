@@ -16,39 +16,31 @@
 
 package io.cdap.cdap.internal.app.worker;
 
-import io.cdap.cdap.api.Admin;
 import io.cdap.cdap.api.artifact.ArtifactId;
+import io.cdap.cdap.api.artifact.ArtifactManager;
 import io.cdap.cdap.api.macro.InvalidMacroException;
 import io.cdap.cdap.api.macro.MacroEvaluator;
 import io.cdap.cdap.api.macro.MacroParserOptions;
 import io.cdap.cdap.api.plugin.PluginConfigurer;
 import io.cdap.cdap.api.security.store.SecureStore;
 import io.cdap.cdap.api.security.store.SecureStoreData;
-import io.cdap.cdap.api.security.store.SecureStoreManager;
 import io.cdap.cdap.api.security.store.SecureStoreMetadata;
-import io.cdap.cdap.api.service.worker.TaskSystemAppContext;
+import io.cdap.cdap.api.service.worker.SystemAppTaskContext;
+import io.cdap.cdap.app.services.AbstractServiceDiscoverer;
 import io.cdap.cdap.common.NotFoundException;
-import io.cdap.cdap.common.ServiceUnavailableException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
-import io.cdap.cdap.common.internal.remote.RemoteClient;
-import io.cdap.cdap.common.namespace.NamespaceQueryAdmin;
 import io.cdap.cdap.common.service.Retries;
+import io.cdap.cdap.common.service.RetryStrategies;
 import io.cdap.cdap.common.service.RetryStrategy;
-import io.cdap.cdap.common.service.ServiceDiscoverable;
 import io.cdap.cdap.common.utils.DirUtils;
-import io.cdap.cdap.data2.dataset2.DatasetFramework;
 import io.cdap.cdap.internal.app.DefaultPluginConfigurer;
-import io.cdap.cdap.internal.app.runtime.DefaultAdmin;
+import io.cdap.cdap.internal.app.runtime.artifact.ArtifactManagerFactory;
 import io.cdap.cdap.internal.app.runtime.artifact.PluginFinder;
 import io.cdap.cdap.internal.app.runtime.plugin.MacroParser;
 import io.cdap.cdap.internal.app.runtime.plugin.PluginInstantiator;
-import io.cdap.cdap.messaging.MessagingService;
-import io.cdap.cdap.messaging.context.BasicMessagingAdmin;
 import io.cdap.cdap.metadata.PreferencesFetcher;
-import io.cdap.cdap.proto.ProgramType;
 import io.cdap.cdap.proto.id.NamespaceId;
-import io.cdap.common.http.HttpRequestConfig;
 import org.apache.twill.discovery.DiscoveryServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,23 +48,19 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
- * Default implementation for {@link io.cdap.cdap.api.service.worker.TaskSystemAppContext}
+ * Default implementation for {@link io.cdap.cdap.api.service.worker.SystemAppTaskContext}
  */
-public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
+public class DefaultSystemAppTaskContext extends AbstractServiceDiscoverer implements SystemAppTaskContext {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DefaultTaskSystemAppContext.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultSystemAppTaskContext.class);
 
-  private final Admin admin;
   private final PreferencesFetcher preferencesFetcher;
   private final CConfiguration cConf;
   private final ClassLoader artifactClassLoader;
@@ -81,34 +69,51 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
   private final DiscoveryServiceClient discoveryServiceClient;
   private final SecureStore secureStore;
   private final String artifactNameSpace;
+  private final String serviceName;
   private final RetryStrategy retryStrategy;
-  private List<Closeable> closeables;
+  private final ArtifactManager artifactManager;
+  private final PluginInstantiator instantiator;
+  private final List<Closeable> closeableList;
+  private io.cdap.cdap.proto.id.ArtifactId protoArtifactId;
 
-  DefaultTaskSystemAppContext(CConfiguration cConf, DatasetFramework dsFramework,
-                              SecureStoreManager secureStoreManager, MessagingService messagingService,
-                              RetryStrategy retryStrategy, NamespaceQueryAdmin namespaceQueryAdmin,
-                              PreferencesFetcher preferencesFetcher, PluginFinder pluginFinder,
+  DefaultSystemAppTaskContext(CConfiguration cConf, PreferencesFetcher preferencesFetcher, PluginFinder pluginFinder,
                               DiscoveryServiceClient discoveryServiceClient, SecureStore secureStore,
-                              String artifactNameSpace, ArtifactId artifactId, ClassLoader artifactClassLoader) {
+                              String artifactNameSpace, ArtifactId artifactId, ClassLoader artifactClassLoader,
+                              ArtifactManagerFactory artifactManagerFactory, String serviceName) {
+    super(artifactNameSpace);
     this.cConf = cConf;
     this.artifactNameSpace = artifactNameSpace;
-    NamespaceId namespaceId = new NamespaceId(artifactNameSpace);
-    this.admin = new DefaultAdmin(dsFramework, namespaceId, secureStoreManager,
-                                  new BasicMessagingAdmin(messagingService, namespaceId),
-                                  retryStrategy, null, namespaceQueryAdmin);
-    this.retryStrategy = retryStrategy;
+    this.serviceName = serviceName;
+    this.retryStrategy = RetryStrategies.fromConfiguration(cConf, Constants.Retry.SERVICE_PREFIX);
     this.preferencesFetcher = preferencesFetcher;
     this.artifactClassLoader = artifactClassLoader;
     this.pluginFinder = pluginFinder;
     this.artifactId = artifactId;
     this.discoveryServiceClient = discoveryServiceClient;
     this.secureStore = secureStore;
-    this.closeables = new ArrayList<>();
+    this.artifactManager = artifactManagerFactory.create(new NamespaceId(artifactNameSpace), retryStrategy);
+    this.closeableList = new ArrayList<>();
+    File pluginsDir = createTempFolder();
+    instantiator = new PluginInstantiator(cConf, artifactClassLoader, pluginsDir);
+    closeableList.add(() -> {
+      try {
+        instantiator.close();
+      } finally {
+        DirUtils.deleteDirectoryContents(pluginsDir, true);
+      }
+    });
+    protoArtifactId = new io.cdap.cdap.proto.id.ArtifactId(artifactNameSpace, artifactId.getName(),
+                                                           artifactId.getVersion().getVersion());
   }
 
-  @Override
-  public Admin getAdmin() {
-    return admin;
+  private File createTempFolder() {
+    File tmpDir = new File(cConf.get(Constants.CFG_LOCAL_DATA_DIR),
+                           cConf.get(Constants.AppFabric.TEMP_DIR)).getAbsoluteFile();
+    try {
+      return Files.createTempDirectory(tmpDir.toPath(), "plugins").toFile();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -122,20 +127,6 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
 
   @Override
   public PluginConfigurer createPluginConfigurer(String namespace) throws IOException {
-    File tmpDir = new File(cConf.get(Constants.CFG_LOCAL_DATA_DIR),
-                           cConf.get(Constants.AppFabric.TEMP_DIR)).getAbsoluteFile();
-    File pluginsDir = Files.createTempDirectory(tmpDir.toPath(), "plugins").toFile();
-    PluginInstantiator instantiator = new PluginInstantiator(cConf, artifactClassLoader, pluginsDir);
-    closeables.add(() -> {
-      try {
-        instantiator.close();
-      } finally {
-        DirUtils.deleteDirectoryContents(pluginsDir, true);
-      }
-    });
-    io.cdap.cdap.proto.id.ArtifactId protoArtifactId =
-      new io.cdap.cdap.proto.id.ArtifactId(artifactNameSpace, artifactId.getName(),
-                                           artifactId.getVersion().getVersion());
     return new DefaultPluginConfigurer(protoArtifactId, new NamespaceId(namespace), instantiator, pluginFinder);
   }
 
@@ -154,51 +145,18 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
   }
 
   @Override
-  public void releaseResources() {
-    for (Closeable closeable : closeables) {
-      try {
-        closeable.close();
-      } catch (IOException e) {
-        LOG.warn("Error while cleaning up resources.", e);
-      }
-    }
+  public ArtifactManager getArtifactManager() {
+    return artifactManager;
   }
 
   @Override
-  public URL getServiceURL(String namespaceId, String applicationId, String serviceId) {
-    try {
-      return createRemoteClient(namespaceId, applicationId, serviceId).resolve("");
-    } catch (ServiceUnavailableException e) {
-      return null;
-    }
+  public String getServiceName() {
+    return serviceName;
   }
 
   @Override
-  public URL getServiceURL(String applicationId, String serviceId) {
-    return getServiceURL(artifactNameSpace, applicationId, serviceId);
-  }
-
-  @Override
-  public URL getServiceURL(String serviceId) {
-    throw new UnsupportedOperationException("Application Id is required.");
-  }
-
-  @Nullable
-  @Override
-  public HttpURLConnection openConnection(String namespaceId, String applicationId,
-                                          String serviceId, String methodPath) throws IOException {
-    try {
-      return createRemoteClient(namespaceId, applicationId, serviceId).openConnection(methodPath);
-    } catch (ServiceUnavailableException e) {
-      return null;
-    }
-  }
-
-  private RemoteClient createRemoteClient(String namespaceId, String applicationId, String serviceId) {
-    String discoveryName = ServiceDiscoverable.getName(namespaceId, applicationId, ProgramType.SERVICE, serviceId);
-    String basePath = String.format("%s/namespaces/%s/apps/%s/services/%s/methods/",
-                                    Constants.Gateway.API_VERSION_3_TOKEN, namespaceId, applicationId, serviceId);
-    return new RemoteClient(discoveryServiceClient, discoveryName, HttpRequestConfig.DEFAULT, basePath);
+  protected DiscoveryServiceClient getDiscoveryServiceClient() {
+    return discoveryServiceClient;
   }
 
   @Override
@@ -209,5 +167,16 @@ public class DefaultTaskSystemAppContext implements TaskSystemAppContext  {
   @Override
   public SecureStoreData get(String namespace, String name) throws Exception {
     return Retries.callWithRetries(() -> secureStore.get(namespace, name), retryStrategy);
+  }
+
+  @Override
+  public void close() {
+    for (Closeable closeable : closeableList) {
+      try {
+        closeable.close();
+      } catch (IOException e) {
+        LOG.warn("Error while cleaning up resources.", e);
+      }
+    }
   }
 }

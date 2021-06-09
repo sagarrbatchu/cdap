@@ -36,15 +36,15 @@ public class RunnableTaskContext {
   @Nullable
   private final ArtifactId artifactId;
   @Nullable
-  private final TaskSystemAppContext taskSystemAppContext;
+  private final SystemAppTaskContext systemAppTaskContext;
 
   public RunnableTaskContext(String param, @Nullable URI fileURI, @Nullable String namespace,
-                             @Nullable ArtifactId artifactId, @Nullable TaskSystemAppContext taskSystemAppContext) {
+                             @Nullable ArtifactId artifactId, @Nullable SystemAppTaskContext systemAppTaskContext) {
     this.param = param;
     this.fileURI = fileURI;
     this.namespace = namespace;
     this.artifactId = artifactId;
-    this.taskSystemAppContext = taskSystemAppContext;
+    this.systemAppTaskContext = systemAppTaskContext;
     this.outputStream = new ByteArrayOutputStream();
   }
 
@@ -75,8 +75,8 @@ public class RunnableTaskContext {
   }
 
   @Nullable
-  public TaskSystemAppContext getRunnableTaskSystemAppContext() {
-    return taskSystemAppContext;
+  public SystemAppTaskContext getRunnableTaskSystemAppContext() {
+    return systemAppTaskContext;
   }
 
   public static Builder getBuilder() {
@@ -95,7 +95,7 @@ public class RunnableTaskContext {
     @Nullable
     private ArtifactId artifactId;
     @Nullable
-    private TaskSystemAppContext taskSystemAppContext;
+    private SystemAppTaskContext systemAppTaskContext;
 
     private Builder() {
 
@@ -121,14 +121,14 @@ public class RunnableTaskContext {
       return this;
     }
 
-    public Builder withTaskSystemAppContext(@Nullable TaskSystemAppContext
-                                              taskSystemAppContext) {
-      this.taskSystemAppContext = taskSystemAppContext;
+    public Builder withTaskSystemAppContext(@Nullable SystemAppTaskContext
+                                              systemAppTaskContext) {
+      this.systemAppTaskContext = systemAppTaskContext;
       return this;
     }
 
     public RunnableTaskContext build() {
-      return new RunnableTaskContext(param, fileURI, namespace, artifactId, taskSystemAppContext);
+      return new RunnableTaskContext(param, fileURI, namespace, artifactId, systemAppTaskContext);
     }
   }
 }

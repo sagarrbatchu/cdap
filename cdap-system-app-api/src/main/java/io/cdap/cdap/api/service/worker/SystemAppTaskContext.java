@@ -16,8 +16,8 @@
 
 package io.cdap.cdap.api.service.worker;
 
-import io.cdap.cdap.api.Admin;
 import io.cdap.cdap.api.ServiceDiscoverer;
+import io.cdap.cdap.api.artifact.ArtifactManager;
 import io.cdap.cdap.api.macro.InvalidMacroException;
 import io.cdap.cdap.api.macro.MacroEvaluator;
 import io.cdap.cdap.api.macro.MacroParserOptions;
@@ -30,18 +30,13 @@ import java.util.Map;
 /**
  * System App context for a remote task
  */
-public interface TaskSystemAppContext extends ServiceDiscoverer, SecureStore {
-
-  /**
-   * @return an {@link Admin} to perform admin operations
-   */
-  Admin getAdmin();
+public interface SystemAppTaskContext extends ServiceDiscoverer, SecureStore, AutoCloseable {
 
   /**
    * Fetch preferences for the given namespace.
    *
    * @param namespace the name of the namespace to fetch preferences for.
-   * @param resolved  true if resolved properties are desired.
+   * @param resolved true if resolved properties are desired.
    * @return Map containing Preferences keys and values.
    * @throws IOException if the preferences for the supplied namespace could not be fetched.
    * @throws IllegalArgumentException if the namespace doesn't exist.
@@ -71,8 +66,12 @@ public interface TaskSystemAppContext extends ServiceDiscoverer, SecureStore {
                                      MacroParserOptions options) throws InvalidMacroException;
 
   /**
-   * Release all the resources created for the context
+   * @return {@link ArtifactManager} for artifact listing and class loading
    */
-  void releaseResources();
+  ArtifactManager getArtifactManager();
 
+  /**
+   * @return String service name
+   */
+  String getServiceName();
 }

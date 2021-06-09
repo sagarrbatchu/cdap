@@ -100,8 +100,8 @@ public class ValidationHandler extends AbstractSystemHttpServiceHandler {
     validateLocally(request, responder, namespace);
   }
 
-  private void validateRemotely(HttpServiceRequest request, HttpServiceResponder responder, String namespace) throws
-    IOException {
+  private void validateRemotely(HttpServiceRequest request, HttpServiceResponder responder,
+                                String namespace) throws IOException {
     String validationRequestString = StandardCharsets.UTF_8.decode(request.getContent()).toString();
     RemoteValidationRequest remoteValidationRequest = new RemoteValidationRequest(namespace, validationRequestString);
     RunnableTaskRequest runnableTaskRequest = RunnableTaskRequest.getBuilder(RemoteValidationTask.class.getName()).
@@ -145,29 +145,23 @@ public class ValidationHandler extends AbstractSystemHttpServiceHandler {
       }
     }
 
-    Map<String, String> finalArguments = arguments;
-    Function<Map<String, String>, Map<String, String>> macroFn =
-      macroProperties -> evaluateMacros(namespace, finalArguments, macroProperties);
-    String validationResponse = GSON.toJson(ValidationUtils.validate(validationRequest,
-                                                                     getContext().createPluginConfigurer(namespace),
-                                                                     macroFn));
-    responder.sendString(validationResponse);
-  }
-
-  private Map<String, String> evaluateMacros(String namespace, Map<String, String> programArgs,
-                                             Map<String, String> macroProperties) {
     Map<String, MacroEvaluator> evaluators = ImmutableMap.of(
       SecureStoreMacroEvaluator.FUNCTION_NAME, new SecureStoreMacroEvaluator(namespace, getContext()),
       OAuthMacroEvaluator.FUNCTION_NAME, new OAuthMacroEvaluator(getContext()),
       ConnectionMacroEvaluator.FUNCTION_NAME, new ConnectionMacroEvaluator(namespace, getContext())
     );
-    MacroEvaluator macroEvaluator = new DefaultMacroEvaluator(new BasicArguments(programArgs), evaluators);
+    MacroEvaluator macroEvaluator = new DefaultMacroEvaluator(new BasicArguments(arguments), evaluators);
     MacroParserOptions macroParserOptions = MacroParserOptions.builder()
       .skipInvalidMacros()
       .setEscaping(false)
       .setFunctionWhitelist(evaluators.keySet())
       .build();
-    return getContext().evaluateMacros(namespace, macroProperties, macroEvaluator, macroParserOptions);
+    Function<Map<String, String>, Map<String, String>> macroFn =
+      macroProperties -> getContext().evaluateMacros(namespace, macroProperties, macroEvaluator, macroParserOptions);
+    String validationResponse = GSON.toJson(ValidationUtils.validate(validationRequest,
+                                                                     getContext().createPluginConfigurer(namespace),
+                                                                     macroFn));
+    responder.sendString(validationResponse);
   }
 
   @POST

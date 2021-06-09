@@ -18,7 +18,6 @@ package io.cdap.cdap.internal.app.worker;
 
 import com.google.inject.Guice;
 import io.cdap.cdap.common.conf.CConfiguration;
-import io.cdap.cdap.common.conf.SConfiguration;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -30,6 +29,6 @@ public class SystemAppModuleTest {
 
   @Test
   public void test() {
-    Guice.createInjector(Collections.singleton(new SystemAppModule(CConfiguration.create(), SConfiguration.create())));
+    Guice.createInjector(Collections.singleton(new SystemAppModule(CConfiguration.create())));
   }
 }

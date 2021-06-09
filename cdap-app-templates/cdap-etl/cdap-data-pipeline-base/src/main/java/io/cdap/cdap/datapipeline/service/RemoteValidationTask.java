@@ -23,9 +23,10 @@ import com.google.gson.JsonSyntaxException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.macro.MacroEvaluator;
 import io.cdap.cdap.api.macro.MacroParserOptions;
+import io.cdap.cdap.api.plugin.PluginConfigurer;
 import io.cdap.cdap.api.service.worker.RunnableTask;
 import io.cdap.cdap.api.service.worker.RunnableTaskContext;
-import io.cdap.cdap.api.service.worker.TaskSystemAppContext;
+import io.cdap.cdap.api.service.worker.SystemAppTaskContext;
 import io.cdap.cdap.etl.common.BasicArguments;
 import io.cdap.cdap.etl.common.ConnectionMacroEvaluator;
 import io.cdap.cdap.etl.common.DefaultMacroEvaluator;
@@ -54,7 +55,7 @@ public class RemoteValidationTask implements RunnableTask {
 
   @Override
   public void run(RunnableTaskContext context) throws Exception {
-    TaskSystemAppContext systemAppContext = context.getRunnableTaskSystemAppContext();
+    SystemAppTaskContext systemAppContext = context.getRunnableTaskSystemAppContext();
     RemoteValidationRequest remoteValidationRequest = GSON.fromJson(context.getParam(), RemoteValidationRequest.class);
     String namespace = remoteValidationRequest.getNamespace();
     String serializedRequest = remoteValidationRequest.getSerializedRequest();
@@ -69,9 +70,7 @@ public class RemoteValidationTask implements RunnableTask {
       throw new IllegalArgumentException("Invalid stage config", e);
     }
 
-
     Map<String, String> arguments = Collections.emptyMap();
-
     // Fetch preferences for this instance and namespace and use them as program arguments if the user selects
     // this option.
     if (validationRequest.getResolveMacrosFromPreferences()) {
@@ -84,18 +83,6 @@ public class RemoteValidationTask implements RunnableTask {
       }
     }
 
-    Map<String, String> finalArguments = arguments;
-    Function<Map<String, String>, Map<String, String>> macroFn =
-      macroProperties -> evaluateMacros(namespace, finalArguments, macroProperties, systemAppContext);
-    StageValidationResponse stageValidationResponse = ValidationUtils.validate(validationRequest,
-                                                                systemAppContext.createPluginConfigurer(namespace),
-                                                                macroFn);
-    context.writeResult(GSON.toJson(stageValidationResponse).getBytes());
-  }
-
-  private Map<String, String> evaluateMacros(String namespace, Map<String, String> programArgs,
-                                             Map<String, String> macroProperties,
-                                             TaskSystemAppContext systemAppContext) {
     Map<String, MacroEvaluator> evaluators = ImmutableMap.of(
       SecureStoreMacroEvaluator.FUNCTION_NAME,
       new SecureStoreMacroEvaluator(namespace, systemAppContext),
@@ -103,12 +90,17 @@ public class RemoteValidationTask implements RunnableTask {
       ConnectionMacroEvaluator.FUNCTION_NAME,
       new ConnectionMacroEvaluator(namespace, systemAppContext)
     );
-    MacroEvaluator macroEvaluator = new DefaultMacroEvaluator(new BasicArguments(programArgs), evaluators);
+    MacroEvaluator macroEvaluator = new DefaultMacroEvaluator(new BasicArguments(arguments), evaluators);
     MacroParserOptions macroParserOptions = MacroParserOptions.builder()
       .skipInvalidMacros()
       .setEscaping(false)
       .setFunctionWhitelist(evaluators.keySet())
       .build();
-    return systemAppContext.evaluateMacros(namespace, macroProperties, macroEvaluator, macroParserOptions);
+    Function<Map<String, String>, Map<String, String>> macroFn =
+      macroProperties -> systemAppContext
+        .evaluateMacros(namespace, macroProperties, macroEvaluator, macroParserOptions);
+    PluginConfigurer pluginConfigurer = systemAppContext.createPluginConfigurer(namespace);
+    StageValidationResponse validationResponse = ValidationUtils.validate(validationRequest, pluginConfigurer, macroFn);
+    context.writeResult(GSON.toJson(validationResponse).getBytes());
   }
 }

@@ -44,6 +44,7 @@ public class TaskWorkerService extends AbstractIdleService {
   private static final Logger LOG = LoggerFactory.getLogger(TaskWorkerService.class);
 
   private final CConfiguration cConf;
+  private final SConfiguration sConf;
   private final DiscoveryService discoveryService;
   private final NettyHttpService httpService;
   private Cancellable cancelDiscovery;
@@ -54,6 +55,7 @@ public class TaskWorkerService extends AbstractIdleService {
                     SConfiguration sConf,
                     DiscoveryService discoveryService) {
     this.cConf = cConf;
+    this.sConf = sConf;
     this.discoveryService = discoveryService;
 
     NettyHttpService.Builder builder = new CommonNettyHttpServiceBuilder(cConf, Constants.Service.TASK_WORKER)

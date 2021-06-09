@@ -18,7 +18,6 @@ package io.cdap.cdap.internal.app.worker;
 
 import com.google.inject.AbstractModule;
 import io.cdap.cdap.common.conf.CConfiguration;
-import io.cdap.cdap.common.conf.SConfiguration;
 
 /**
  * Module for Runnable tasks.
@@ -26,16 +25,13 @@ import io.cdap.cdap.common.conf.SConfiguration;
 public class RunnableTaskModule extends AbstractModule {
 
   private final CConfiguration cConf;
-  private final SConfiguration sConf;
 
-  public RunnableTaskModule(CConfiguration cConf, SConfiguration sConf) {
+  public RunnableTaskModule(CConfiguration cConf) {
     this.cConf = cConf;
-    this.sConf = sConf;
   }
 
   @Override
   protected void configure() {
     bind(CConfiguration.class).toInstance(cConf);
-    bind(SConfiguration.class).toInstance(sConf);
   }
 }

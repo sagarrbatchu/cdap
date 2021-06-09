@@ -22,7 +22,6 @@ import io.cdap.cdap.api.service.worker.RunnableTask;
 import io.cdap.cdap.api.service.worker.RunnableTaskContext;
 import io.cdap.cdap.api.service.worker.RunnableTaskRequest;
 import io.cdap.cdap.common.conf.CConfiguration;
-import io.cdap.cdap.common.conf.SConfiguration;
 
 import java.net.URI;
 
@@ -31,11 +30,9 @@ import java.net.URI;
  */
 public class RunnableTaskLauncher {
   private final CConfiguration cConf;
-  private final SConfiguration sConf;
 
-  public RunnableTaskLauncher(CConfiguration cConf, SConfiguration sConf) {
+  public RunnableTaskLauncher(CConfiguration cConf) {
     this.cConf = cConf;
-    this.sConf = sConf;
   }
 
   public byte[] launchRunnableTask(RunnableTaskRequest request, URI fileURI) throws Exception {
@@ -47,7 +44,7 @@ public class RunnableTaskLauncher {
 
     Class<?> clazz = classLoader.loadClass(request.getClassName());
 
-    Injector injector = Guice.createInjector(new RunnableTaskModule(cConf, sConf));
+    Injector injector = Guice.createInjector(new RunnableTaskModule(cConf));
     Object obj = injector.getInstance(clazz);
 
     if (!(obj instanceof RunnableTask)) {

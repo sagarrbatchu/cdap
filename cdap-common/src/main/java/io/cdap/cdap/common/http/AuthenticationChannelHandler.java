@@ -72,8 +72,13 @@ public class AuthenticationChannelHandler extends ChannelInboundHandlerAdapter {
       SecurityRequestContext.setUserCredential(currentUserCredential);
       SecurityRequestContext.setUserIP(currentUserIP);
     }
-
-    ctx.fireChannelRead(msg);
+    try {
+      ctx.fireChannelRead(msg);
+    } finally {
+      SecurityRequestContext.setUserId(null);
+      SecurityRequestContext.setUserIP(null);
+      SecurityRequestContext.setUserCredential(null);
+    }
   }
 
   @Override

@@ -20,8 +20,12 @@ import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.http.ChannelPipelineModifier;
 import io.cdap.http.NettyHttpService;
+import io.cdap.http.internal.HttpDispatcher;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 
 import javax.annotation.Nullable;
 
@@ -30,6 +34,8 @@ import javax.annotation.Nullable;
  */
 public class CommonNettyHttpServiceBuilder extends NettyHttpService.Builder {
 
+  public static final String DISPATCHER_PIPELINE_STEP = "dispatcher";
+  public static final String AUTHENTICATOR_PIPELINE_STEP = "authenticator";
   private ChannelPipelineModifier pipelineModifier;
   private ChannelPipelineModifier additionalModifier;
 
@@ -40,12 +46,18 @@ public class CommonNettyHttpServiceBuilder extends NettyHttpService.Builder {
       pipelineModifier = new ChannelPipelineModifier() {
         @Override
         public void modify(ChannelPipeline pipeline) {
-          // Adds the AuthenticationChannelHandler before the dispatcher, using the same
-          // EventExecutor to make sure they get invoked from the same thread
+          // Adds the AuthenticationChannelHandler before the dispatcher.
+          // The dispatcher itself is readded with the immediate executor.
           // This is needed before we use a InheritableThreadLocal in SecurityRequestContext
           // to remember the user id.
-          EventExecutor executor = pipeline.context("dispatcher").executor();
-          pipeline.addBefore(executor, "dispatcher", "authenticator", new AuthenticationChannelHandler());
+          ChannelHandlerContext dispatcher = pipeline.context(DISPATCHER_PIPELINE_STEP);
+          EventExecutor executor = dispatcher.executor();
+          pipeline.addBefore(executor, DISPATCHER_PIPELINE_STEP, AUTHENTICATOR_PIPELINE_STEP,
+                             new AuthenticationChannelHandler());
+          ChannelHandler dispatcherHandler = dispatcher.handler();
+          pipeline.remove(dispatcherHandler);
+          pipeline.addAfter(ImmediateEventExecutor.INSTANCE, AUTHENTICATOR_PIPELINE_STEP, DISPATCHER_PIPELINE_STEP,
+                            new HttpDispatcher());
         }
       };
     }

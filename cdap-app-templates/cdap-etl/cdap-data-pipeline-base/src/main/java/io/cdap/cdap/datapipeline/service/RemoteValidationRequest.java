@@ -22,19 +22,19 @@ package io.cdap.cdap.datapipeline.service;
 public class RemoteValidationRequest {
 
   private final String namespace;
-  //The original serialized request
-  private final String serializedRequest;
+  //The original request string
+  private final String request;
 
-  public RemoteValidationRequest(String namespace, String serializedRequest) {
+  public RemoteValidationRequest(String namespace, String request) {
     this.namespace = namespace;
-    this.serializedRequest = serializedRequest;
+    this.request = request;
   }
 
   public String getNamespace() {
     return namespace;
   }
 
-  public String getSerializedRequest() {
-    return serializedRequest;
+  public String getRequest() {
+    return request;
   }
 }

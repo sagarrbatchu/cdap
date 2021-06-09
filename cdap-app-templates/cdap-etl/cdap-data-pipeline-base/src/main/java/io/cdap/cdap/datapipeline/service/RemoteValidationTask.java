@@ -58,14 +58,14 @@ public class RemoteValidationTask implements RunnableTask {
     SystemAppTaskContext systemAppContext = context.getRunnableTaskSystemAppContext();
     RemoteValidationRequest remoteValidationRequest = GSON.fromJson(context.getParam(), RemoteValidationRequest.class);
     String namespace = remoteValidationRequest.getNamespace();
-    String serializedRequest = remoteValidationRequest.getSerializedRequest();
+    String originalRequest = remoteValidationRequest.getRequest();
     StageValidationRequest validationRequest;
     try {
-      validationRequest = GSON.fromJson(serializedRequest,
+      validationRequest = GSON.fromJson(originalRequest,
                                         StageValidationRequest.class);
       validationRequest.validate();
     } catch (JsonSyntaxException e) {
-      throw new IllegalArgumentException(String.format("Unable to decode request body %s", serializedRequest), e);
+      throw new IllegalArgumentException(String.format("Unable to decode request body %s", originalRequest), e);
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("Invalid stage config", e);
     }

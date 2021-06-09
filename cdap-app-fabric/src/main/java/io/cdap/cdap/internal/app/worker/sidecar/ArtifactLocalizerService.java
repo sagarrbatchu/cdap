@@ -31,6 +31,7 @@ import org.apache.twill.discovery.DiscoveryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
@@ -40,49 +41,37 @@ import java.util.concurrent.TimeUnit;
 public class ArtifactLocalizerService extends AbstractIdleService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ArtifactLocalizerService.class);
-  private static final String BIND_ADDRESS = "127.0.0.1";
 
-  private final CConfiguration cConf;
-  private final SConfiguration sConf;
   private final DiscoveryService discoveryService;
   private final NettyHttpService httpService;
-  private Cancellable cancelDiscovery;
   private InetSocketAddress bindAddress;
 
   @Inject
   ArtifactLocalizerService(CConfiguration cConf,
-                           SConfiguration sConf,
                            DiscoveryService discoveryService) {
-    this.cConf = cConf;
-    this.sConf = sConf;
     this.discoveryService = discoveryService;
 
     NettyHttpService.Builder builder = new CommonNettyHttpServiceBuilder(cConf, Constants.Service.TASK_WORKER)
-      .setHost(BIND_ADDRESS)
+      .setHost(InetAddress.getLoopbackAddress().getHostName())
       .setPort(cConf.getInt(Constants.ArtifactLocalizer.PORT))
       .setBossThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.BOSS_THREADS))
       .setWorkerThreadPoolSize(cConf.getInt(Constants.ArtifactLocalizer.WORKER_THREADS))
-      .setHttpHandlers(new ArtifactLocalizerHttpHandlerInternal(this.cConf));
+      .setHttpHandlers(new ArtifactLocalizerHttpHandlerInternal(cConf));
 
     httpService = builder.build();
   }
 
   @Override
   protected void startUp() throws Exception {
-    LOG.info("Starting ArtifactLocalizerService");
+    LOG.debug("Starting ArtifactLocalizerService");
     httpService.start();
     bindAddress = httpService.getBindAddress();
-    cancelDiscovery = discoveryService.register(
-      ResolvingDiscoverable.of(URIScheme.createDiscoverable(Constants.Service.TASK_WORKER, httpService)));
-    LOG.info("Starting ArtifactLocalizerService has completed");
+    LOG.debug("Starting ArtifactLocalizerService has completed");
   }
 
   @Override
   protected void shutDown() throws Exception {
-    LOG.info("Shutting down ArtifactLocalizerService");
-    if (cancelDiscovery != null) {
-      cancelDiscovery.cancel();
-    }
+    LOG.debug("Shutting down ArtifactLocalizerService");
     httpService.stop(5, 5, TimeUnit.SECONDS);
     LOG.debug("Shutting down ArtifactLocalizerService has completed");
   }

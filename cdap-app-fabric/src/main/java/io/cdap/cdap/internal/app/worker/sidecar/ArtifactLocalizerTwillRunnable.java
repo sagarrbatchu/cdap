@@ -138,7 +138,6 @@ public class ArtifactLocalizerTwillRunnable extends AbstractTwillRunnable {
 
     try {
       Uninterruptibles.getUninterruptibly(future);
-      LOG.debug("Artifact localizer stopped");
     } catch (ExecutionException e) {
       LOG.warn("Artifact localizer stopped with exception", e);
     }
@@ -146,7 +145,6 @@ public class ArtifactLocalizerTwillRunnable extends AbstractTwillRunnable {
 
   @Override
   public void stop() {
-    LOG.info("Stopping artifact localizer");
     artifactLocalizerService.stop();
   }
 

@@ -111,7 +111,7 @@ public class ArtifactLocalizerTwillRunnable extends AbstractTwillRunnable {
     super.initialize(context);
 
     try {
-      doInitialize(context);
+      doInitialize();
     } catch (Exception e) {
       Throwables.propagateIfPossible(e);
       throw new RuntimeException(e);
@@ -155,7 +155,7 @@ public class ArtifactLocalizerTwillRunnable extends AbstractTwillRunnable {
     logAppenderInitializer.close();
   }
 
-  private void doInitialize(TwillContext context) throws Exception {
+  private void doInitialize() throws Exception {
     CConfiguration cConf = CConfiguration.create();
     cConf.clear();
     cConf.addResource(new File(getArgument("cConf")).toURI().toURL());
@@ -172,7 +172,7 @@ public class ArtifactLocalizerTwillRunnable extends AbstractTwillRunnable {
 
     LoggingContext loggingContext = new ServiceLoggingContext(NamespaceId.SYSTEM.getNamespace(),
                                                               Constants.Logging.COMPONENT_NAME,
-                                                              "Artifact_Localizer");
+                                                              Constants.Service.ARTIFACT_LOCALIZER);
     LoggingContextAccessor.setLoggingContext(loggingContext);
     artifactLocalizerService = injector.getInstance(ArtifactLocalizerService.class);
   }

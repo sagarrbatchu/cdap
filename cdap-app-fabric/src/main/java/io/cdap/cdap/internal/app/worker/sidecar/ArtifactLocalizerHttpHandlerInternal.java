@@ -27,7 +27,7 @@ import io.cdap.cdap.proto.codec.BasicThrowableCodec;
 import io.cdap.http.AbstractHttpHandler;
 import io.cdap.http.HttpHandler;
 import io.cdap.http.HttpResponder;
-import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ public class ArtifactLocalizerHttpHandlerInternal extends AbstractHttpHandler {
 
   @GET
   @Path("/localize")
-  public void run(FullHttpRequest request, HttpResponder responder) {
+  public void run(HttpRequest request, HttpResponder responder) {
     //implementation will be added in a followup PR.
   }
 

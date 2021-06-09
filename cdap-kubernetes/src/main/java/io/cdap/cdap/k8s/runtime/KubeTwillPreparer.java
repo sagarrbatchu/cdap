@@ -566,12 +566,12 @@ class KubeTwillPreparer implements DependentTwillPreparer, StatefulTwillPreparer
     return new V1DeploymentBuilder()
       .withMetadata(metadata)
       .withNewSpec()
-        .withSelector(new V1LabelSelector().matchLabels(metadata.getLabels()))
-        .withReplicas(replicas)
-        .withNewTemplate()
-          .withMetadata(metadata)
-          .withSpec(createPodSpec(runtimeConfigLocation, runtimeSpecs))
-        .endTemplate()
+      .withSelector(new V1LabelSelector().matchLabels(metadata.getLabels()))
+      .withReplicas(replicas)
+      .withNewTemplate()
+      .withMetadata(metadata)
+      .withSpec(createPodSpec(runtimeConfigLocation, runtimeSpecs))
+      .endTemplate()
       .endSpec()
       .build();
   }
@@ -588,15 +588,15 @@ class KubeTwillPreparer implements DependentTwillPreparer, StatefulTwillPreparer
     return new V1StatefulSetBuilder()
       .withMetadata(metadata)
       .withNewSpec()
-        .withSelector(new V1LabelSelector().matchLabels(metadata.getLabels()))
-        .withReplicas(replicas)
-        .withPodManagementPolicy(statefulRunnable.isOrderedStart() ? "OrderedReady" : "Parallel")
-        .addAllToVolumeClaimTemplates(disks.stream().map(this::createPVC).collect(Collectors.toList()))
-        .withNewTemplate()
-          .withMetadata(metadata)
-          .withSpec(createPodSpec(runtimeConfigLocation, runtimeSpecs,
-                                  disks.stream().map(this::createDiskMount).toArray(V1VolumeMount[]::new)))
-        .endTemplate()
+      .withSelector(new V1LabelSelector().matchLabels(metadata.getLabels()))
+      .withReplicas(replicas)
+      .withPodManagementPolicy(statefulRunnable.isOrderedStart() ? "OrderedReady" : "Parallel")
+      .addAllToVolumeClaimTemplates(disks.stream().map(this::createPVC).collect(Collectors.toList()))
+      .withNewTemplate()
+      .withMetadata(metadata)
+      .withSpec(createPodSpec(runtimeConfigLocation, runtimeSpecs,
+                              disks.stream().map(this::createDiskMount).toArray(V1VolumeMount[]::new)))
+      .endTemplate()
       .endSpec()
       .build();
   }
@@ -749,8 +749,10 @@ class KubeTwillPreparer implements DependentTwillPreparer, StatefulTwillPreparer
     String workDir = "/workDir-" + twillRunId.getId();
 
     V1Volume podInfoVolume = createPodInfoVolume(podInfo);
-    V1ResourceRequirements resourceRequirements =
-      createResourceRequirements(runtimeSpecs.iterator().next().getResourceSpecification());
+
+    RuntimeSpecification mainRuntimeSpec = getMainRuntimeSpecification(runtimeSpecs);
+    V1ResourceRequirements initContainerResourceRequirements =
+      createResourceRequirements(mainRuntimeSpec.getResourceSpecification());
 
     // Add volume mounts to the container. Add those from the current pod for mount cdap and hadoop conf.
     List<V1VolumeMount> volumeMounts = new ArrayList<>(podInfo.getContainerVolumeMounts());

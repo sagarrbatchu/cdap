@@ -91,7 +91,7 @@ public class NettyRouter extends AbstractIdleService {
   private final boolean sslEnabled;
   private InetSocketAddress boundAddress;
 
-  private final DiscoveryServiceClient discoveryServiceClient;
+  private DiscoveryServiceClient discoveryServiceClient;
   private Cancellable serverCancellable;
 
   @Inject

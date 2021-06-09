@@ -182,7 +182,7 @@ public class DefaultAccessEnforcer extends AbstractAccessEnforcer {
   }
 
   /**
-   * Encrypt the given credential followed by a base64 encoding.
+   * Decrypt the given credential in encrypted and base64 encoded form.
    */
   private Principal decryptUserCredential(Principal principle) throws AccessException {
     if (principle.getCredential() == null ||

@@ -2802,7 +2802,6 @@
         <module>cdap-distributions</module>
         <module>cdap-test</module>
         <module>cdap-integration-test</module>
-        <module>cdap-ui</module>
       </modules>
     </profile>
     <profile>

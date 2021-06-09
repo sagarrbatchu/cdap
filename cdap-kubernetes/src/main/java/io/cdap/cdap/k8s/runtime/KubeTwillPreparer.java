@@ -53,6 +53,7 @@ import io.kubernetes.client.models.V1StatefulSet;
 import io.kubernetes.client.models.V1StatefulSetBuilder;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.twill.api.ClassAcceptor;
 import org.apache.twill.api.Configs;
 import org.apache.twill.api.LocalFile;
@@ -119,9 +120,9 @@ import java.util.stream.Collectors;
  * <p>
  * If {@link TwillSpecification} contains multiple {@link TwillRunnable}, the first runnable will be treated as the
  * main container, and the rest will be treated as sidecar containers.
- * TODO This assumption needs to be changed by using {@ TwillSpecification.PlacementPolicy}.
+ * TODO This assumption needs to be changed by using {@link TwillSpecification.PlacementPolicy}.
  */
-class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
+class KubeTwillPreparer implements DependentTwillPreparer, StatefulTwillPreparer {
 
   private static final Logger LOG = LoggerFactory.getLogger(KubeTwillPreparer.class);
 
@@ -169,7 +170,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
     this.twillSpec = spec;
     this.resourcePrefix = resourcePrefix;
     this.extraLabels = extraLabels;
-    dependentRunnableNames = new HashSet<>();
+    this.dependentRunnableNames = new HashSet<>();
   }
 
   /**
@@ -178,25 +179,26 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
   @Override
   public DependentTwillPreparer withDependentRunnables(String mainRunnableName, String... dependentRunnableName) {
     if (mainRunnableName == null || dependentRunnableName == null || dependentRunnableName.length == 0) {
-      throw new IllegalArgumentException("Main or dependent runnable names cannot be empty");
-    }
-
-    if (twillSpec.getRunnables().get(mainRunnableName) == null) {
-      throw new IllegalArgumentException(String.format("Main runnable name %s has not been set", mainRunnableName));
-    }
-
-    for (String name : dependentRunnableName) {
-      if (twillSpec.getRunnables().get(name) == null) {
-        throw new IllegalArgumentException(String.format("Runnable name %s has not been set", name));
-      }
+      throw new IllegalArgumentException("Main or dependent runnable names cannot be null or empty");
     }
 
     Set<String> tmpSet = new HashSet<>(Arrays.asList(dependentRunnableName));
-    for (RuntimeSpecification spec : this.twillSpec.getRunnables().values()) {
-      tmpSet.remove(spec.getName());
+    if (tmpSet.contains(mainRunnableName)) {
+      throw new IllegalArgumentException("Main runnable cannot depend on itself");
     }
-    if (tmpSet.size() > 0) {
-      throw new IllegalArgumentException(String.format("Specify dependency for runnables %s", tmpSet.toString()));
+
+    tmpSet.add(mainRunnableName);
+
+    Collection<?> missing = CollectionUtils.subtract(twillSpec.getRunnables().keySet(), tmpSet);
+    if (missing.size() > 0) {
+      throw new IllegalArgumentException(String.format("Specify dependency for runnables %s",
+                                                       missing));
+    }
+
+    missing = CollectionUtils.subtract(tmpSet, twillSpec.getRunnables().keySet());
+    if (missing.size() > 0) {
+      throw new IllegalArgumentException(String.format("Missing runnables %s in Twill application",
+                                                       missing));
     }
 
     this.mainRunnableName = mainRunnableName;
@@ -208,16 +210,12 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
   /**
    * Currently, KubeTwillPreparer only supports one StatefulRunnables for a Twill application.
    * Therefore, the provided {@link StatefulDisk} applies to all the containers that correspond to Twill runnables.
-   * @param mainRunnableName name of the main {@link TwillRunnable}
-   * @param orderedStart {@code true} to start replicas one by one; {@code false} to start replicas in parallel
-   * @param disks
-   * @return
    */
   @Override
-  public KubeTwillPreparer withStatefulRunnable(String mainRunnableName,
+  public KubeTwillPreparer withStatefulRunnable(String runnableName,
                                                 boolean orderedStart, StatefulDisk... disks) {
-    if (!twillSpec.getRunnables().containsKey(mainRunnableName)) {
-      throw new IllegalArgumentException("Runnable " + mainRunnableName + " not found");
+    if (!twillSpec.getRunnables().containsKey(runnableName)) {
+      throw new IllegalArgumentException("Runnable " + runnableName + " not found");
     }
 
     if (Arrays.stream(disks).map(StatefulDisk::getName).collect(Collectors.toSet()).size() != disks.length) {
@@ -227,11 +225,11 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
       throw new IllegalArgumentException("Each stateful disk must have unique mount path");
     }
 
-    if (statefulRunnables.entrySet().size() > 1 && !statefulRunnables.containsKey(mainRunnableName)) {
+    if (statefulRunnables.entrySet().size() > 1 && !statefulRunnables.containsKey(runnableName)) {
       throw new IllegalArgumentException("Multiple statefulRunnables for a Twill application is not supported");
     }
 
-    statefulRunnables.put(mainRunnableName, new StatefulRunnable(orderedStart, Arrays.asList(disks)));
+    statefulRunnables.put(runnableName, new StatefulRunnable(orderedStart, Arrays.asList(disks)));
     return this;
   }
 
@@ -426,11 +424,8 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
       throw new RuntimeException("No Twill runnables has been specified");
     }
 
-    if (this.mainRunnableName == null) {
-      if (this.twillSpec.getRunnables().size() != 1) {
-        throw new RuntimeException("Dependency among Twill runnables has not been specified");
-      }
-      return;
+    if (this.mainRunnableName == null && this.twillSpec.getRunnables().size() > 1) {
+      throw new RuntimeException("Dependency among Twill runnables has not been specified");
     }
   }
 
@@ -770,8 +765,7 @@ class KubeTwillPreparer implements TwillPreparer, StatefulTwillPreparer {
     // Setup the container environment. Inherit everything from the current pod.
     Map<String, String> initContainerEnvirons = podInfo.getContainerEnvironments().stream()
       .collect(Collectors.toMap(V1EnvVar::getName, V1EnvVar::getValue));
-    // Add all environments of the first runnable which is considered the main runnable
-    // to the init container.
+    // Add all environments of the the main runnable for the init container.
     if (environments.get(mainRuntimeSpec.getName()) != null) {
       initContainerEnvirons.putAll(environments.get(mainRuntimeSpec.getName()));
     }

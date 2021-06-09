@@ -22,6 +22,7 @@ import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.utils.DirUtils;
 import io.cdap.cdap.internal.app.worker.sidecar.ArtifactLocalizerTwillRunnable;
+import io.cdap.cdap.master.spi.twill.DependentTwillPreparer;
 import io.cdap.cdap.master.spi.twill.StatefulDisk;
 import io.cdap.cdap.master.spi.twill.StatefulTwillPreparer;
 import org.apache.hadoop.conf.Configuration;
@@ -156,14 +157,18 @@ public class TaskWorkerServiceLauncher extends AbstractScheduledService {
             twillPreparer = twillPreparer.setSchedulerQueue(priorityClass);
           }
 
+          if (twillPreparer instanceof DependentTwillPreparer) {
+            twillPreparer = ((DependentTwillPreparer) twillPreparer)
+              .withDependentRunnables(TaskWorkerTwillRunnable.class.getSimpleName(),
+                                      ArtifactLocalizerTwillRunnable.class.getSimpleName());
+          }
+
           if (twillPreparer instanceof StatefulTwillPreparer) {
             int diskSize = cConf.getInt(Constants.TaskWorker.CONTAINER_DISK_SIZE_GB);
             twillPreparer = ((StatefulTwillPreparer) twillPreparer)
               .withStatefulRunnable(TaskWorkerTwillRunnable.class.getSimpleName(), false,
                                     new StatefulDisk("task-worker-data", diskSize,
-                                                     cConf.get(Constants.CFG_LOCAL_DATA_DIR)))
-              .withDependentRunnables(TaskWorkerTwillRunnable.class.getSimpleName(),
-                                      ArtifactLocalizerTwillRunnable.class.getSimpleName());
+                                                     cConf.get(Constants.CFG_LOCAL_DATA_DIR)));
           }
 
           activeController = twillPreparer.start(5, TimeUnit.MINUTES);

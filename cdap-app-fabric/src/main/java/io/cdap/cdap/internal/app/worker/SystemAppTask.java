@@ -28,16 +28,22 @@ import io.cdap.cdap.api.service.worker.RunnableTask;
 import io.cdap.cdap.api.service.worker.RunnableTaskContext;
 import io.cdap.cdap.api.service.worker.RunnableTaskRequest;
 import io.cdap.cdap.api.service.worker.SystemAppTaskContext;
+import io.cdap.cdap.app.guice.DistributedArtifactManagerModule;
 import io.cdap.cdap.common.NotFoundException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
+import io.cdap.cdap.common.guice.ConfigModule;
+import io.cdap.cdap.common.guice.LocalLocationModule;
 import io.cdap.cdap.common.id.Id;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactDetail;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactManagerFactory;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactRepository;
 import io.cdap.cdap.internal.app.runtime.artifact.ArtifactRepositoryReader;
 import io.cdap.cdap.internal.app.runtime.artifact.PluginFinder;
+import io.cdap.cdap.logging.guice.RemoteLogAppenderModule;
+import io.cdap.cdap.messaging.guice.MessagingClientModule;
 import io.cdap.cdap.metadata.PreferencesFetcher;
+import io.cdap.cdap.security.guice.SecureStoreClientModule;
 import io.cdap.cdap.security.impersonation.EntityImpersonator;
 import io.cdap.cdap.security.impersonation.Impersonator;
 import org.apache.twill.discovery.DiscoveryServiceClient;
@@ -53,7 +59,8 @@ import java.io.OutputStream;
 public class SystemAppTask implements RunnableTask {
 
   private static final Gson GSON = new Gson();
-  private CConfiguration cConf;
+
+  private final CConfiguration cConf;
 
   @Inject
   SystemAppTask(CConfiguration cConf) {
@@ -62,7 +69,7 @@ public class SystemAppTask implements RunnableTask {
 
   @Override
   public void run(RunnableTaskContext context) throws Exception {
-    Injector injector = Guice.createInjector(new SystemAppModule(cConf));
+    Injector injector = createInjector();
     ArtifactRepositoryReader artifactRepositoryReader = injector.getInstance(ArtifactRepositoryReader.class);
     ArtifactRepository artifactRepository = injector.getInstance(ArtifactRepository.class);
     Impersonator impersonator = injector.getInstance(Impersonator.class);
@@ -95,6 +102,17 @@ public class SystemAppTask implements RunnableTask {
       runnableTask.run(runnableTaskContext);
       context.writeResult(runnableTaskContext.getResult());
     }
+  }
+
+  private Injector createInjector() {
+    return Guice.createInjector(
+      new ConfigModule(cConf),
+      new RemoteLogAppenderModule(),
+      new DistributedArtifactManagerModule(),
+      new MessagingClientModule(),
+      new LocalLocationModule(),
+      new SecureStoreClientModule(),
+      new SystemAppModule());
   }
 
   private SystemAppTaskContext buildTaskSystemAppContext(Injector injector, String systemAppNamespace,

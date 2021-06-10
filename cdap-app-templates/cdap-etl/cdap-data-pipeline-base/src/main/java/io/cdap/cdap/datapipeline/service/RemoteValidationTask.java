@@ -52,6 +52,7 @@ public class RemoteValidationTask implements RunnableTask {
     .serializeNulls()
     .create();
   private static final Logger LOG = LoggerFactory.getLogger(RemoteValidationTask.class);
+  static final String NAMESPACE_DOES_NOT_EXIST = "Namespace '%s' does not exist";
 
   @Override
   public void run(RunnableTaskContext context) throws Exception {
@@ -70,6 +71,7 @@ public class RemoteValidationTask implements RunnableTask {
       throw new IllegalArgumentException("Invalid stage config", e);
     }
 
+
     Map<String, String> arguments = Collections.emptyMap();
     // Fetch preferences for this instance and namespace and use them as program arguments if the user selects
     // this option.
@@ -79,7 +81,7 @@ public class RemoteValidationTask implements RunnableTask {
       } catch (IllegalArgumentException iae) {
         // If this method returns IllegalArgumentException, it means the namespace doesn't exist.
         // If this is the case, we return a 404 error.
-        throw new IllegalArgumentException(String.format("Namespace '%s' does not exist", namespace), iae);
+        throw new IllegalArgumentException(String.format(NAMESPACE_DOES_NOT_EXIST, namespace), iae);
       }
     }
 

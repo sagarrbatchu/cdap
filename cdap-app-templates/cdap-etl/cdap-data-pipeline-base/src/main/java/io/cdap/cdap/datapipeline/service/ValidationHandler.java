@@ -35,6 +35,8 @@ import io.cdap.cdap.api.security.AccessException;
 import io.cdap.cdap.api.service.http.AbstractSystemHttpServiceHandler;
 import io.cdap.cdap.api.service.http.HttpServiceRequest;
 import io.cdap.cdap.api.service.http.HttpServiceResponder;
+import io.cdap.cdap.api.service.worker.RemoteExecutionException;
+import io.cdap.cdap.api.service.worker.RemoteTaskException;
 import io.cdap.cdap.api.service.worker.RunnableTaskRequest;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.batch.BatchPipelineSpec;
@@ -47,7 +49,6 @@ import io.cdap.cdap.etl.proto.v2.spec.PipelineSpec;
 import io.cdap.cdap.etl.proto.v2.spec.PluginSpec;
 import io.cdap.cdap.etl.proto.v2.spec.StageSpec;
 import io.cdap.cdap.etl.proto.v2.validation.StageValidationRequest;
-import io.cdap.cdap.etl.proto.v2.validation.StageValidationResponse;
 import io.cdap.cdap.internal.io.SchemaTypeAdapter;
 import io.cdap.cdap.proto.artifact.AppRequest;
 import org.slf4j.Logger;
@@ -60,7 +61,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -74,7 +74,8 @@ public class ValidationHandler extends AbstractSystemHttpServiceHandler {
     .registerTypeAdapter(Schema.class, new SchemaTypeAdapter())
     .serializeNulls()
     .create();
-  private static final Type APP_REQUEST_TYPE = new TypeToken<AppRequest<JsonObject>>() { }.getType();
+  private static final Type APP_REQUEST_TYPE = new TypeToken<AppRequest<JsonObject>>() {
+  }.getType();
   private static final Logger LOG = LoggerFactory.getLogger(ValidationHandler.class);
 
   @GET
@@ -110,9 +111,22 @@ public class ValidationHandler extends AbstractSystemHttpServiceHandler {
     try {
       byte[] bytes = getContext().runTask(runnableTaskRequest);
       responder.sendString(Bytes.toString(bytes));
+    } catch (RemoteExecutionException e) {
+      RemoteTaskException remoteTaskException = e.getRemoteTaskException();
+      responder.sendError(
+        getExceptionCode(remoteTaskException.getRemoteExceptionClassName(), remoteTaskException.getMessage(),
+                         namespace), remoteTaskException.getMessage());
     } catch (Exception e) {
-      responder.sendError(HttpURLConnection.HTTP_INTERNAL_ERROR, "Error from remote task " + e.getMessage());
+      responder.sendError(HttpURLConnection.HTTP_INTERNAL_ERROR, e.getMessage());
     }
+  }
+
+  private int getExceptionCode(String exceptionClass, String exceptionMessage, String namespace) {
+    if (IllegalArgumentException.class.getName().equals(exceptionClass)) {
+      return String.format(RemoteValidationTask.NAMESPACE_DOES_NOT_EXIST, namespace).equals(exceptionMessage) ?
+        HttpURLConnection.HTTP_NOT_FOUND : HttpURLConnection.HTTP_BAD_REQUEST;
+    }
+    return HttpURLConnection.HTTP_INTERNAL_ERROR;
   }
 
   private void validateLocally(HttpServiceRequest request, HttpServiceResponder responder,

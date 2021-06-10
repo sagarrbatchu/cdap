@@ -45,11 +45,9 @@ import org.apache.twill.discovery.DiscoveryServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,18 +61,15 @@ public class DefaultSystemAppTaskContext extends AbstractServiceDiscoverer imple
 
   private final PreferencesFetcher preferencesFetcher;
   private final CConfiguration cConf;
-  private final ClassLoader artifactClassLoader;
   private final PluginFinder pluginFinder;
-  private final ArtifactId artifactId;
   private final DiscoveryServiceClient discoveryServiceClient;
   private final SecureStore secureStore;
-  private final String artifactNameSpace;
   private final String serviceName;
   private final RetryStrategy retryStrategy;
   private final ArtifactManager artifactManager;
   private final PluginInstantiator instantiator;
-  private final List<Closeable> closeableList;
-  private io.cdap.cdap.proto.id.ArtifactId protoArtifactId;
+  private final File pluginsDir;
+  private final io.cdap.cdap.proto.id.ArtifactId protoArtifactId;
 
   DefaultSystemAppTaskContext(CConfiguration cConf, PreferencesFetcher preferencesFetcher, PluginFinder pluginFinder,
                               DiscoveryServiceClient discoveryServiceClient, SecureStore secureStore,
@@ -82,26 +77,15 @@ public class DefaultSystemAppTaskContext extends AbstractServiceDiscoverer imple
                               ArtifactManagerFactory artifactManagerFactory, String serviceName) {
     super(artifactNameSpace);
     this.cConf = cConf;
-    this.artifactNameSpace = artifactNameSpace;
     this.serviceName = serviceName;
     this.retryStrategy = RetryStrategies.fromConfiguration(cConf, Constants.Retry.SERVICE_PREFIX);
     this.preferencesFetcher = preferencesFetcher;
-    this.artifactClassLoader = artifactClassLoader;
     this.pluginFinder = pluginFinder;
-    this.artifactId = artifactId;
     this.discoveryServiceClient = discoveryServiceClient;
     this.secureStore = secureStore;
     this.artifactManager = artifactManagerFactory.create(new NamespaceId(artifactNameSpace), retryStrategy);
-    this.closeableList = new ArrayList<>();
-    File pluginsDir = createTempFolder();
+    this.pluginsDir = createTempFolder();
     instantiator = new PluginInstantiator(cConf, artifactClassLoader, pluginsDir);
-    closeableList.add(() -> {
-      try {
-        instantiator.close();
-      } finally {
-        DirUtils.deleteDirectoryContents(pluginsDir, true);
-      }
-    });
     protoArtifactId = new io.cdap.cdap.proto.id.ArtifactId(artifactNameSpace, artifactId.getName(),
                                                            artifactId.getVersion().getVersion());
   }
@@ -126,7 +110,7 @@ public class DefaultSystemAppTaskContext extends AbstractServiceDiscoverer imple
   }
 
   @Override
-  public PluginConfigurer createPluginConfigurer(String namespace) throws IOException {
+  public PluginConfigurer createPluginConfigurer(String namespace) {
     return new DefaultPluginConfigurer(protoArtifactId, new NamespaceId(namespace), instantiator, pluginFinder);
   }
 
@@ -171,12 +155,14 @@ public class DefaultSystemAppTaskContext extends AbstractServiceDiscoverer imple
 
   @Override
   public void close() {
-    for (Closeable closeable : closeableList) {
+    try {
       try {
-        closeable.close();
-      } catch (IOException e) {
-        LOG.warn("Error while cleaning up resources.", e);
+        instantiator.close();
+      } finally {
+        DirUtils.deleteDirectoryContents(pluginsDir, true);
       }
+    } catch (IOException e) {
+      LOG.warn("Error while cleaning up resources.", e);
     }
   }
 }

@@ -159,7 +159,7 @@ public class TaskWorkerServiceLauncher extends AbstractScheduledService {
 
           if (twillPreparer instanceof DependentTwillPreparer) {
             twillPreparer = ((DependentTwillPreparer) twillPreparer)
-              .withDependentRunnables(TaskWorkerTwillRunnable.class.getSimpleName(),
+              .dependentRunnableNames(TaskWorkerTwillRunnable.class.getSimpleName(),
                                       ArtifactLocalizerTwillRunnable.class.getSimpleName());
           }
 

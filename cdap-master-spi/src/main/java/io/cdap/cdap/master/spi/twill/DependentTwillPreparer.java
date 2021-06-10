@@ -30,5 +30,5 @@ public interface DependentTwillPreparer extends TwillPreparer {
    * @param dependentRunnableName names of dependent {@link TwillRunnable}
    * @return this {@link TwillPreparer}
    */
-  DependentTwillPreparer withDependentRunnables(String mainRunnableName, String... dependentRunnableName);
+  DependentTwillPreparer dependentRunnableNames(String mainRunnableName, String... dependentRunnableName);
 }

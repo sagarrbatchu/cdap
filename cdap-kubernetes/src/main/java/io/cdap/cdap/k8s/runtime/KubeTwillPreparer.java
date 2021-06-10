@@ -53,7 +53,6 @@ import io.kubernetes.client.models.V1StatefulSet;
 import io.kubernetes.client.models.V1StatefulSetBuilder;
 import io.kubernetes.client.models.V1Volume;
 import io.kubernetes.client.models.V1VolumeMount;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.twill.api.ClassAcceptor;
 import org.apache.twill.api.Configs;
 import org.apache.twill.api.LocalFile;
@@ -177,26 +176,30 @@ class KubeTwillPreparer implements DependentTwillPreparer, StatefulTwillPreparer
    * A call overwrites the values provided in the previous call.
    */
   @Override
-  public DependentTwillPreparer withDependentRunnables(String mainRunnableName, String... dependentRunnableName) {
+  public DependentTwillPreparer dependentRunnableNames(String mainRunnableName, String... dependentRunnableName) {
     if (mainRunnableName == null || dependentRunnableName == null || dependentRunnableName.length == 0) {
       throw new IllegalArgumentException("Main or dependent runnable names cannot be null or empty");
     }
 
-    Set<String> tmpSet = new HashSet<>(Arrays.asList(dependentRunnableName));
-    if (tmpSet.contains(mainRunnableName)) {
+    Set<String> allRunnables = new HashSet<>(Arrays.asList(dependentRunnableName));
+    if (allRunnables.contains(mainRunnableName)) {
       throw new IllegalArgumentException("Main runnable cannot depend on itself");
     }
+    allRunnables.add(mainRunnableName);
 
-    tmpSet.add(mainRunnableName);
+    Set<String> missing = twillSpec.getRunnables().keySet().stream()
+      .filter(s -> !allRunnables.contains(s))
+      .collect(Collectors.toSet());
 
-    Collection<?> missing = CollectionUtils.subtract(twillSpec.getRunnables().keySet(), tmpSet);
-    if (missing.size() > 0) {
+    if (!missing.isEmpty()) {
       throw new IllegalArgumentException(String.format("Specify dependency for runnables %s",
                                                        missing));
     }
 
-    missing = CollectionUtils.subtract(tmpSet, twillSpec.getRunnables().keySet());
-    if (missing.size() > 0) {
+    missing = allRunnables.stream()
+      .filter(s -> !twillSpec.getRunnables().containsKey(s))
+      .collect(Collectors.toSet());
+    if (!missing.isEmpty()) {
       throw new IllegalArgumentException(String.format("Missing runnables %s in Twill application",
                                                        missing));
     }
@@ -420,7 +423,7 @@ class KubeTwillPreparer implements DependentTwillPreparer, StatefulTwillPreparer
   }
 
   private void validateSpecification() {
-    if (this.twillSpec.getRunnables().size() == 0) {
+    if (this.twillSpec.getRunnables().isEmpty()) {
       throw new RuntimeException("No Twill runnables has been specified");
     }
 

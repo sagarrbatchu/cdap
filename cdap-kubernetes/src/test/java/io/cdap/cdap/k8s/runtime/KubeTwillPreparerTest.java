@@ -63,7 +63,7 @@ public class KubeTwillPreparerTest {
 
     // test catching main runnable depends on itself
     try {
-      preparer.withDependentRunnables(MainRunnable.class.getSimpleName(), MainRunnable.class.getSimpleName());
+      preparer.dependentRunnableNames(MainRunnable.class.getSimpleName(), MainRunnable.class.getSimpleName());
       Assert.fail("Expected IllegalArgumentException exception but got no exception");
     } catch (Exception ex) {
       Assert.assertThat(ex, CoreMatchers.instanceOf(IllegalArgumentException.class));
@@ -71,7 +71,7 @@ public class KubeTwillPreparerTest {
 
     // test catching empty dependent runnables
     try {
-      preparer.withDependentRunnables(MainRunnable.class.getSimpleName());
+      preparer.dependentRunnableNames(MainRunnable.class.getSimpleName());
       Assert.fail("Expected IllegalArgumentException exception but got no exception");
     } catch (Exception ex) {
       Assert.assertThat(ex, CoreMatchers.instanceOf(IllegalArgumentException.class));
@@ -79,7 +79,7 @@ public class KubeTwillPreparerTest {
 
     // test catching missing dependency
     try {
-      preparer.withDependentRunnables(MainRunnable.class.getSimpleName(), SidecarRunnable.class.getSimpleName());
+      preparer.dependentRunnableNames(MainRunnable.class.getSimpleName(), SidecarRunnable.class.getSimpleName());
       Assert.fail("Expected IllegalArgumentException exception but got no exception");
     } catch (Exception ex) {
       Assert.assertThat(ex, CoreMatchers.instanceOf(IllegalArgumentException.class));
@@ -88,7 +88,7 @@ public class KubeTwillPreparerTest {
 
     // test catching missing runnable in twill specfication
     try {
-      preparer.withDependentRunnables(MainRunnable.class.getSimpleName(),
+      preparer.dependentRunnableNames(MainRunnable.class.getSimpleName(),
                                       SidecarRunnable.class.getSimpleName(),
                                       SidecarRunnable2.class.getSimpleName(), "missing-runnable");
       Assert.fail("Expected IllegalArgumentException exception but got no exception");
@@ -98,7 +98,7 @@ public class KubeTwillPreparerTest {
     }
 
     // test valid dependency
-    preparer.withDependentRunnables(MainRunnable.class.getSimpleName(), SidecarRunnable.class.getSimpleName(),
+    preparer.dependentRunnableNames(MainRunnable.class.getSimpleName(), SidecarRunnable.class.getSimpleName(),
                                     SidecarRunnable2.class.getSimpleName());
   }
 

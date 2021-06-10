@@ -34,13 +34,15 @@ import io.cdap.cdap.master.spi.environment.MasterEnvironmentContext;
 import io.cdap.cdap.messaging.guice.MessagingClientModule;
 import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.security.auth.TokenManager;
+import io.cdap.cdap.security.auth.context.AuthenticationContextModules;
 import io.cdap.cdap.security.guice.SecurityModule;
 import io.cdap.cdap.security.guice.SecurityModules;
 import io.cdap.cdap.security.impersonation.SecurityUtil;
 import org.apache.twill.zookeeper.ZKClientService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -48,6 +50,7 @@ import javax.annotation.Nullable;
  * The main class to run router service.
  */
 public class RouterServiceMain extends AbstractServiceMain<EnvironmentOptions> {
+  private static final Logger LOG = LoggerFactory.getLogger(RouterServiceMain.class);
 
   /**
    * Main entry point
@@ -69,17 +72,20 @@ public class RouterServiceMain extends AbstractServiceMain<EnvironmentOptions> {
   }
 
   private List<Module> getSecurityModules(CConfiguration cConf) {
+    List<Module> modules = new ArrayList<>();
+    if (cConf.getBoolean(Constants.Security.Internal.ENFORCE_INTERNAL_AUTH)) {
+      modules.add(new AuthenticationContextModules().getMasterModule());
+    }
     if (!SecurityUtil.isManagedSecurity(cConf)) {
-      return Collections.singletonList(new SecurityModules().getStandaloneModules());
+      modules.add(new SecurityModules().getStandaloneModules());
+      return modules;
     }
 
-    List<Module> modules = new ArrayList<>();
     SecurityModule securityModule = SecurityModules.getDistributedModule(cConf);
     modules.add(securityModule);
     if (securityModule.requiresZKClient()) {
       modules.add(new ZKClientModule());
     }
-
     return modules;
   }
 
